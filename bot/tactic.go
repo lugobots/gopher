@@ -60,7 +60,7 @@ func DetermineTeamState(ballRegion field.Region, teamSide, possession lugo.Team_
 var roleMap = map[uint32]PlayerActionRegions{
 	// starting from 2 because the number goalkeeper has PlayerActionRegions
 	2: {
-		Initial:       {1, 5},
+		Initial:       {1, 2},
 		UnderPressure: {0, 1},
 		Defensive:     {1, 0},
 		Neutral:       {2, 0},
@@ -68,7 +68,7 @@ var roleMap = map[uint32]PlayerActionRegions{
 		OnAttack:      {1, 1},
 	},
 	3: {
-		Initial:       {1, 3},
+		Initial:       {1, 5},
 		UnderPressure: {1, 1},
 		Defensive:     {1, 1},
 		Neutral:       {1, 1},
@@ -76,7 +76,7 @@ var roleMap = map[uint32]PlayerActionRegions{
 		OnAttack:      {4, 1},
 	},
 	4: {
-		Initial:       {2, 4},
+		Initial:       {2, 6},
 		UnderPressure: {1, 2},
 		Defensive:     {1, 2},
 		Neutral:       {1, 2},
@@ -84,7 +84,7 @@ var roleMap = map[uint32]PlayerActionRegions{
 		OnAttack:      {4, 2},
 	},
 	5: {
-		Initial:       {2, 6},
+		Initial:       {2, 1},
 		UnderPressure: {0, 2},
 		Defensive:     {1, 3},
 		Neutral:       {2, 3},
@@ -92,7 +92,7 @@ var roleMap = map[uint32]PlayerActionRegions{
 		OnAttack:      {1, 2},
 	},
 	6: {
-		Initial:       {2, 6},
+		Initial:       {3, 6},
 		UnderPressure: {1, 0},
 		Defensive:     {2, 1},
 		Neutral:       {3, 1},
@@ -100,7 +100,7 @@ var roleMap = map[uint32]PlayerActionRegions{
 		OnAttack:      {5, 0},
 	},
 	7: {
-		Initial:       {2, 6},
+		Initial:       {3, 4},
 		UnderPressure: {2, 1},
 		Defensive:     {3, 1},
 		Neutral:       {4, 1},
@@ -108,7 +108,7 @@ var roleMap = map[uint32]PlayerActionRegions{
 		OnAttack:      {6, 1},
 	},
 	8: {
-		Initial:       {2, 6},
+		Initial:       {3, 3},
 		UnderPressure: {2, 2},
 		Defensive:     {3, 2},
 		Neutral:       {4, 2},
@@ -116,7 +116,7 @@ var roleMap = map[uint32]PlayerActionRegions{
 		OnAttack:      {6, 2},
 	},
 	9: {
-		Initial:       {2, 6},
+		Initial:       {3, 1},
 		UnderPressure: {1, 3},
 		Defensive:     {2, 2},
 		Neutral:       {3, 2},
@@ -124,7 +124,7 @@ var roleMap = map[uint32]PlayerActionRegions{
 		OnAttack:      {5, 3},
 	},
 	10: {
-		Initial:       {3, 6},
+		Initial:       {4, 5},
 		UnderPressure: {3, 1},
 		Defensive:     {4, 1},
 		Neutral:       {5, 1},
@@ -132,7 +132,7 @@ var roleMap = map[uint32]PlayerActionRegions{
 		OnAttack:      {7, 1},
 	},
 	11: {
-		Initial:       {3, 6},
+		Initial:       {4, 2},
 		UnderPressure: {3, 2},
 		Defensive:     {4, 2},
 		Neutral:       {6, 2},
