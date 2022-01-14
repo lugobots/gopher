@@ -1,11 +1,7 @@
 package bot
 
 import (
-	"context"
-	"fmt"
-	"github.com/lugobots/lugo4go/v2/coach"
-	"github.com/lugobots/lugo4go/v2/field"
-	"github.com/lugobots/lugo4go/v2/proto"
+	"github.com/lugobots/lugo4go/v2/pkg/field"
 )
 
 // IMPORTANT: all this constant sets below may be changed (see each set instructions). However, any change will
@@ -15,13 +11,8 @@ type TeamState string
 
 type Role string
 
-// Do not remove, rename, or add constants here.
 // You however, may increase or decrease their values to change the precision of the Positioner.
-// These values defines how the field will be divided by the Positioner to create a field map.
-const (
-	RegionCols = 8
-	RegionRows = 4
-)
+// These values define how the field will be divided by the Positioner to create a field map.
 
 // please update the tests if you include more states, or exclude some of them.
 const (
@@ -58,22 +49,22 @@ type RegionCode struct {
 	Row uint8
 }
 
-type RegionMap map[TeamState]RegionCode
+type PlayerActionRegions map[TeamState]RegionCode
 
-func DefineRegionMap(number uint32) RegionMap {
+func DefinePlayerActionRegions(number uint32) PlayerActionRegions {
 	return roleMap[number]
 }
 
-func send(ctx context.Context, turn coach.TurnData, orders []proto.PlayerOrder, debugMsg string) error {
-	r, err := turn.Sender.Send(ctx, orders, debugMsg)
-	if err != nil {
-		return fmt.Errorf("error sending the orders: %s", err)
-	}
-	if r.Code != proto.OrderResponse_SUCCESS {
-		return fmt.Errorf("game server returned an error on our order: %s", err)
-	}
-	return nil
-}
+//func send(ctx context.Context, turn coach.TurnData, orders []proto.PlayerOrder, debugMsg string) error {
+//	r, err := turn.Sender.Send(ctx, orders, debugMsg)
+//	if err != nil {
+//		return fmt.Errorf("error sending the orders: %s", err)
+//	}
+//	if r.Code != proto.OrderResponse_SUCCESS {
+//		return fmt.Errorf("game server returned an error on our order: %s", err)
+//	}
+//	return nil
+//}
 
 //func GetBallRegion(positioner coach.Positioner, ball proto.Ball, logger lugo4go.Logger) coach.Region  {
 //	reg, err := positioner.GetPointRegion(*ball.Position)
@@ -83,10 +74,3 @@ func send(ctx context.Context, turn coach.TurnData, orders []proto.PlayerOrder, 
 //	}
 //	return reg
 //}
-
-func GetMyRegion(teamState TeamState, positioner coach.Positioner, number uint32) coach.Region {
-	regCode := DefineRegionMap(number)[teamState]
-	// @see Readme- ignored errors
-	r, _ := positioner.GetRegion(regCode.Col, regCode.Row)
-	return r
-}

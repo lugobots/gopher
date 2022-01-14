@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 if [ -z "$1" ]
   then
@@ -10,4 +10,5 @@ go build -o the-dummies main.go || { echo "building has failed"; exit 1; }
 for i in `seq 1 11`
 do
   ./the-dummies -team=$1 -number=$i &
+  sleep 0.1
 done

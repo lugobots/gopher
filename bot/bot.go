@@ -2,104 +2,54 @@ package bot
 
 import (
 	"context"
-	"fmt"
 	"github.com/lugobots/lugo4go/v2"
-	"github.com/lugobots/lugo4go/v2/coach"
-	"github.com/lugobots/lugo4go/v2/field"
-	"github.com/lugobots/lugo4go/v2/proto"
-	"math/rand"
+	"github.com/lugobots/lugo4go/v2/lugo"
+	"github.com/lugobots/lugo4go/v2/pkg/field"
 )
 
 type Bot struct {
-	Positioner      coach.Positioner
-	Role            Role
-	regionMap       RegionMap
-	InitialPosition proto.Point
-	log             lugo4go.Logger
-	// UNSAFE
-	BallPossessionTeam proto.Team_Side
-	LastBallHolder     uint32
-	evaluator          evaluator
+	mapper        field.Mapper
+	Role          Role
+	number        uint32
+	side          lugo.Team_Side
+	actionRegions PlayerActionRegions
+	log           lugo4go.Logger
 }
 
-func NewBot(config lugo4go.Config, logger lugo4go.Logger) (*Bot, error) {
-	var err error
-	b := Bot{}
-	b.log = logger
-	b.BallPossessionTeam = field.GetOpponentSide(config.TeamSide)
-	b.evaluator = e{}
-	b.Positioner, err = coach.NewPositioner(RegionCols, RegionRows, config.TeamSide)
-	if err != nil {
-		return nil, fmt.Errorf("could not create a positioner: %s", err)
+func NewBot(logger lugo4go.Logger, side lugo.Team_Side, number uint32) *Bot {
+	fieldMapper, _ := field.NewMapper(FieldGridCols, FieldGridRows, side)
+
+	me := Bot{
+		mapper: fieldMapper,
+		Role:   DefineRole(number),
+		number: number,
+		side:   side,
+		log:    logger,
 	}
-
-	if config.Number != field.GoalkeeperNumber {
-		b.regionMap = DefineRegionMap(config.Number)
-		reg, err := b.Positioner.GetRegion(b.regionMap[Initial].Col, b.regionMap[Initial].Row)
-		logger.Infof("My position: %d, %v (%v)", config.Number, reg, b.regionMap)
-		if err != nil {
-			return nil, fmt.Errorf("did not connected to the gRPC server at '%s': %s", config.GRPCAddress, err)
-		}
-
-		b.InitialPosition = reg.Center()
-		b.Role = DefineRole(config.Number)
-
-	} else {
-		b.InitialPosition = field.GetTeamsGoal(config.TeamSide).Center
+	if number != field.GoalkeeperNumber {
+		me.actionRegions = DefinePlayerActionRegions(number)
 	}
-	return &b, nil
+	return &me
 }
 
-func (b Bot) OnDefending(ctx context.Context, data coach.TurnData) error {
-	b.BallPossessionTeam = field.GetOpponentSide(data.Me.TeamSide)
-	b.LastBallHolder = 0
-	return myDecider(ctx, data)
+func (b *Bot) MyInitialPosition() *lugo.Point {
+	iniRegion := b.actionRegions[Initial]
+	// we may ignore this error because if it is not a valid region we will notice during the development
+	region, _ := b.mapper.GetRegion(iniRegion.Col, iniRegion.Row)
+	return region.Center()
 }
 
-func (b Bot) AsGoalkeeper(ctx context.Context, data coach.TurnData) error {
-	return myDecider(ctx, data)
+func (b *Bot) myActionRegion(teamState TeamState) field.Region {
+	r, _ := b.mapper.GetRegion(b.actionRegions[teamState].Col, b.actionRegions[teamState].Row)
+	return r
 }
 
-func myDecider(ctx context.Context, data coach.TurnData) error {
+func (b *Bot) OnDefending(ctx context.Context, sender lugo4go.TurnOrdersSender, snapshot *lugo.GameSnapshot) error {
+	// nothing
 	return nil
-	var orders []proto.PlayerOrder
-	// we are going to kick the ball as soon as we catch it
-	if field.IsBallHolder(data.Snapshot, data.Me) {
+}
 
-		playerNum := (rand.Uint32() % 10) + 1
-		if playerNum == 10 {
-			playerNum++
-		}
-		playerMate := field.GetPlayer(data.Snapshot, data.Me.TeamSide, playerNum)
-
-		dir := *playerMate.Position
-		orderToKick, err := field.MakeOrderKick(*data.Snapshot.Ball, dir, field.BallMaxSpeed)
-		if err != nil {
-			return fmt.Errorf("could not create kick order during turn %d: %s", data.Snapshot.Turn, err)
-		}
-
-		orderToMove, err := field.MakeOrderMove(*data.Me.Position, dir, 0)
-		if err != nil {
-			return fmt.Errorf("could not create move order during turn %d: %s", data.Snapshot.Turn, err)
-		}
-
-		orders = []proto.PlayerOrder{orderToMove, orderToKick}
-	} else if data.Me.Number == 10 {
-		// otherwise, let's run towards the ball like kids
-		orderToMove, err := field.MakeOrderMoveMaxSpeed(*data.Me.Position, *data.Snapshot.Ball.Position)
-		if err != nil {
-			return fmt.Errorf("could not create move order during turn %d: %s", data.Snapshot.Turn, err)
-		}
-		orders = []proto.PlayerOrder{orderToMove, field.MakeOrderCatch()}
-	} else {
-		orders = []proto.PlayerOrder{field.MakeOrderCatch()}
-	}
-
-	resp, err := data.Sender.Send(ctx, orders, "")
-	if err != nil {
-		return fmt.Errorf("could not send kick order during turn %d: %s", data.Snapshot.Turn, err)
-	} else if resp.Code != proto.OrderResponse_SUCCESS {
-		return fmt.Errorf("order sent not  order during turn %d: %s", data.Snapshot.Turn, err)
-	}
+func (b *Bot) AsGoalkeeper(ctx context.Context, sender lugo4go.TurnOrdersSender, snapshot *lugo.GameSnapshot, state lugo4go.PlayerState) error {
+	// nothing
 	return nil
 }

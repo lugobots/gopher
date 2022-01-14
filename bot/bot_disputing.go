@@ -2,121 +2,79 @@ package bot
 
 import (
 	"context"
-	"fmt"
-	"github.com/lugobots/lugo4go/v2/coach"
-	"github.com/lugobots/lugo4go/v2/field"
-	"github.com/lugobots/lugo4go/v2/proto"
+	"github.com/lugobots/arena/units"
+	"github.com/lugobots/lugo4go/v2"
+	"github.com/lugobots/lugo4go/v2/lugo"
+	"github.com/lugobots/lugo4go/v2/pkg/field"
+	"github.com/pkg/errors"
 	"math"
 )
 
-func (b Bot) OnDisputing(ctx context.Context, turn coach.TurnData) (err error) {
-	debugMsg := ""
-	b.LastBallHolder = 0
-	orders := make([]proto.PlayerOrder, 0, 2)
-	var moveOrder proto.PlayerOrder
-
-	//expectedRegion := GetMyRegion(OnAttack, b.Positioner, turn.Me.Number)
-	//moveOrder, err = field.MakeOrderMoveMaxSpeed(*turn.Me.Position, expectedRegion.Center())
-	//if err != nil {
-	//	return fmt.Errorf("was not able to move this turn: %s", err)
-	//}
-	//orders = []proto.PlayerOrder{moveOrder}
-	//return send(ctx, turn, orders, debugMsg)
-
-	if ShouldIDisputeForTheBall(turn.Me, turn.Snapshot) {
-		speed, target := FindBestPointInterceptBall(*turn.Snapshot.Ball, turn.Me)
-
-		moveOrder, err = field.MakeOrderMove(*turn.Me.Position, target, speed)
-		if err != nil {
-			return fmt.Errorf("was not able to move this turn: %s", err)
-		}
-		orders = []proto.PlayerOrder{moveOrder, field.MakeOrderCatch()}
-		debugMsg = "trying to catch the ball"
-	} else {
-		// @see Readme- ignored errors
-		ballRegion, _ := b.Positioner.GetPointRegion(*turn.Snapshot.Ball.Position)
-
-		// @see Readme- ignored errors
-		teamState, _ := DetermineTeamState(ballRegion, turn.Me.TeamSide, b.BallPossessionTeam)
-
-		// @see Readme- ignored errors
-		currentReg, _ := b.Positioner.GetPointRegion(*turn.Me.Position)
-
-		expectedRegion := GetMyRegion(teamState, b.Positioner, turn.Me.Number)
-
-		if currentReg.String() != expectedRegion.String() {
-			moveOrder, err = field.MakeOrderMoveMaxSpeed(*turn.Me.Position, expectedRegion.Center())
-			if err != nil {
-				return fmt.Errorf("was not able to move this turn: %s", err)
-			}
-			debugMsg = fmt.Sprintf("moving to my region: %v", expectedRegion)
-		} else {
-			moveOrder, err = field.MakeOrderMove(*turn.Me.Position, *turn.Snapshot.Ball.Position, 0)
-			if err != nil {
-				return fmt.Errorf("was not able to move this turn: %s", err)
-			}
-			debugMsg = fmt.Sprintf("holding position (%s %s)", expectedRegion, currentReg)
-		}
-		orders = []proto.PlayerOrder{moveOrder}
+func processServerResp(resp *lugo.OrderResponse, err error) error {
+	if err != nil {
+		return errors.Wrapf(err, "error sending orders")
 	}
-
-	return send(ctx, turn, orders, debugMsg)
+	if resp.Code == lugo.OrderResponse_SUCCESS {
+		return errors.Errorf("server responded a non-success code: %s", resp.GetCode().Descriptor())
+	}
+	return nil
 }
 
-func ShouldIDisputeForTheBall(me *proto.Player, snapshot *proto.GameSnapshot) bool {
-	// suggestion: The bot should considering if the ball is coming to his position, or going away from him
-	distanceToBall := snapshot.Ball.Position.DistanceTo(*me.Position)
+func (b *Bot) OnDisputing(ctx context.Context, sender lugo4go.TurnOrdersSender, snapshot *lugo.GameSnapshot) error {
+	me := field.GetPlayer(snapshot, b.side, b.number)
 
+	if ShouldIDisputeForTheBall(b.mapper, b.number, me.Position, snapshot.Ball.Position, field.GetTeam(snapshot, b.side).Players) {
+		speed, target := FindBestPointInterceptBall(snapshot.GetBall(), me)
+		moveOrder, err := field.MakeOrderMove(*me.Position, *target, speed)
+		if err != nil {
+			return errors.Wrap(err, "error creating move order")
+		}
+		return processServerResp(sender.Send(ctx, []lugo.PlayerOrder{moveOrder, field.MakeOrderCatch()}, "disputing for the ball"))
+	}
+	ballRegion, _ := b.mapper.GetPointRegion(snapshot.Ball.Position)
+	teamState, _ := DetermineTeamState(ballRegion, b.side, b.side)
+	actionRegion := b.myActionRegion(teamState)
+	if currentRegion, _ := b.mapper.GetPointRegion(me.Position); currentRegion != b.myActionRegion(teamState) {
+		moveOrder, err := field.MakeOrderMoveMaxSpeed(*me.Position, *actionRegion.Center())
+		if err != nil {
+			return errors.Wrap(err, "error creating move order to return to action region")
+		}
+		return processServerResp(sender.Send(ctx, []lugo.PlayerOrder{moveOrder, field.MakeOrderCatch()}, "moving to my region"))
+	}
+
+	moveOrder, _ := field.MakeOrderMoveMaxSpeed(*me.Position, field.FieldCenter())
+	return processServerResp(sender.Send(ctx, []lugo.PlayerOrder{moveOrder}, "Holding position"))
+}
+
+func ShouldIDisputeForTheBall(mapper field.Mapper, botNumber uint32, botPosition, ballPosition *lugo.Point, teamMates []*lugo.Player) bool {
+	ballRegion, _ := mapper.GetPointRegion(ballPosition)
+	botRegion, _ := mapper.GetPointRegion(botPosition)
+	if DistanceBetweenRegions(botRegion, ballRegion) < 2 {
+		return true
+	}
+	myDistance := ballPosition.DistanceTo(*ballPosition)
 	playerCloser := 0
-	for _, p := range field.GetTeam(snapshot, me.TeamSide).Players {
-		ddd := p.Position.DistanceTo(*snapshot.Ball.Position)
-		if p.Number != me.Number && distanceToBall > ddd {
+	for _, teamMate := range teamMates {
+		if teamMate.Number != botNumber && teamMate.Position.DistanceTo(*ballPosition) < myDistance {
 			playerCloser++
-			if playerCloser > 1 {
+			if playerCloser > 1 { // are there more than on player closer to the ball than me?
 				return false
 			}
 		}
 	}
 	return true
-
-	//
-	//player := d.Player
-	//if d.ShouldIDisputeForTheBall() {
-	//msg = "Disputing for the ball"
-	////orders = []orders.Order{d.CreateMoveOrderMaxSpeed(d.LastMsg.GameInfo.Ball.Coords)}
-	//speed, target := strategy.FindBestPointInterceptBall(d.GameMsg.Ball(), player)
-	//movOrder, err := player.CreateMoveOrder(target, speed)
-	//if err != nil {
-	//d.Logger.Errorf("error creating move order: %s ", err)
-	//msg = "sorry, I won't play this turn"
-	//} else {
-	//ordersSet = []orders.Order{movOrder}
-	//}
-	//} else {
-	//if d.myCurrentRegion() != d.GetActiveRegion() {
-	//movOrder, err := player.CreateMoveOrderMaxSpeed(d.GetActiveRegionCenter())
-	//if err != nil {
-	//d.Logger.Errorf("error creating move order: %s ", err)
-	//msg = "sorry, I won't play this turn"
-	//} else {
-	//msg = "Moving to my region"
-	//ordersSet = []orders.Order{movOrder}
-	//}
-	//} else {
-	//msg = "Holding position"
-	//ordersSet = []orders.Order{player.CreateStopOrder(*player.Velocity.Direction)}
-	//}
 }
 
-func FindBestPointInterceptBall(ball proto.Ball, player *proto.Player) (speed float64, target proto.Point) {
+func FindBestPointInterceptBall(ball *lugo.Ball, player *lugo.Player) (speed float64, target *lugo.Point) {
 	if ball.Velocity.Speed == 0 {
-		return field.PlayerMaxSpeed, *ball.Position
+		return field.PlayerMaxSpeed, ball.Position
 	} else {
-		calcBallPos := func(frame int) *proto.Point {
+		// @todo needs enhancement: there are math formulas to find the sweet spot
+		calcBallPos := func(frame int) *lugo.Point {
 			//S = So + VT + (aT^2)/2
 			V := ball.Velocity.Speed
 			T := float64(frame)
-			a := -field.BallDeceleration
+			a := -units.BallDeceleration
 			distance := V*T + (a*math.Pow(T, 2))/2
 			if distance <= 0 {
 				return nil
@@ -132,19 +90,18 @@ func FindBestPointInterceptBall(ball proto.Ball, player *proto.Player) (speed fl
 			if ballLocation == nil {
 				break
 			}
-			minDistanceToTouch := ballLocation.DistanceTo(*player.Position) - ((field.BallSize + field.PlayerSize) / 2)
+			minDistanceToTouch := ballLocation.DistanceTo(*player.Position) - ((units.BallSize + units.PlayerSize) / 2)
 
-			if minDistanceToTouch <= float64(field.PlayerMaxSpeed*frames) {
+			if minDistanceToTouch <= float64(units.PlayerMaxSpeed*frames) {
 				if frames > 1 {
-					return field.PlayerMaxSpeed, *ballLocation
+					return units.PlayerMaxSpeed, ballLocation
 				} else {
-					return player.Position.DistanceTo(*ballLocation), *ballLocation
+					return player.Position.DistanceTo(*ballLocation), ballLocation
 				}
 			}
 			lastBallPosition = ballLocation
 			frames++
 		}
-		return field.PlayerMaxSpeed, *lastBallPosition
+		return units.PlayerMaxSpeed, lastBallPosition
 	}
-
 }

@@ -2,8 +2,13 @@ package bot
 
 import (
 	"fmt"
-	"github.com/lugobots/lugo4go/v2/coach"
-	"github.com/lugobots/lugo4go/v2/proto"
+	"github.com/lugobots/lugo4go/v2/lugo"
+	"github.com/lugobots/lugo4go/v2/pkg/field"
+)
+
+const (
+	FieldGridCols = 10
+	FieldGridRows = 8
 )
 
 func DefineRole(number uint32) Role {
@@ -19,7 +24,7 @@ func DefineRole(number uint32) Role {
 	return ""
 }
 
-func DetermineTeamState(ballRegion coach.Region, teamSide, possession proto.Team_Side) (s TeamState, e error) {
+func DetermineTeamState(ballRegion field.Region, teamSide, possession lugo.Team_Side) (s TeamState, e error) {
 	regionCol := ballRegion.Col()
 	if possession == teamSide {
 		switch regionCol {
@@ -52,10 +57,10 @@ func DetermineTeamState(ballRegion coach.Region, teamSide, possession proto.Team
 	return "", fmt.Errorf("unknown team state for ball in %d col, tor possion with %s", regionCol, possession)
 }
 
-var roleMap = map[uint32]RegionMap{
-	// starting from 2 because the number goalkeeper has RegionMap
+var roleMap = map[uint32]PlayerActionRegions{
+	// starting from 2 because the number goalkeeper has PlayerActionRegions
 	2: {
-		Initial:       {1, 0},
+		Initial:       {1, 5},
 		UnderPressure: {0, 1},
 		Defensive:     {1, 0},
 		Neutral:       {2, 0},
@@ -63,7 +68,7 @@ var roleMap = map[uint32]RegionMap{
 		OnAttack:      {1, 1},
 	},
 	3: {
-		Initial:       {1, 1},
+		Initial:       {1, 3},
 		UnderPressure: {1, 1},
 		Defensive:     {1, 1},
 		Neutral:       {1, 1},
@@ -71,7 +76,7 @@ var roleMap = map[uint32]RegionMap{
 		OnAttack:      {4, 1},
 	},
 	4: {
-		Initial:       {1, 2},
+		Initial:       {2, 4},
 		UnderPressure: {1, 2},
 		Defensive:     {1, 2},
 		Neutral:       {1, 2},
@@ -79,7 +84,7 @@ var roleMap = map[uint32]RegionMap{
 		OnAttack:      {4, 2},
 	},
 	5: {
-		Initial:       {1, 3},
+		Initial:       {2, 6},
 		UnderPressure: {0, 2},
 		Defensive:     {1, 3},
 		Neutral:       {2, 3},
@@ -87,7 +92,7 @@ var roleMap = map[uint32]RegionMap{
 		OnAttack:      {1, 2},
 	},
 	6: {
-		Initial:       {2, 0},
+		Initial:       {2, 6},
 		UnderPressure: {1, 0},
 		Defensive:     {2, 1},
 		Neutral:       {3, 1},
@@ -95,7 +100,7 @@ var roleMap = map[uint32]RegionMap{
 		OnAttack:      {5, 0},
 	},
 	7: {
-		Initial:       {2, 1},
+		Initial:       {2, 6},
 		UnderPressure: {2, 1},
 		Defensive:     {3, 1},
 		Neutral:       {4, 1},
@@ -103,7 +108,7 @@ var roleMap = map[uint32]RegionMap{
 		OnAttack:      {6, 1},
 	},
 	8: {
-		Initial:       {2, 2},
+		Initial:       {2, 6},
 		UnderPressure: {2, 2},
 		Defensive:     {3, 2},
 		Neutral:       {4, 2},
@@ -111,7 +116,7 @@ var roleMap = map[uint32]RegionMap{
 		OnAttack:      {6, 2},
 	},
 	9: {
-		Initial:       {2, 3},
+		Initial:       {2, 6},
 		UnderPressure: {1, 3},
 		Defensive:     {2, 2},
 		Neutral:       {3, 2},
@@ -119,7 +124,7 @@ var roleMap = map[uint32]RegionMap{
 		OnAttack:      {5, 3},
 	},
 	10: {
-		Initial:       {3, 1},
+		Initial:       {3, 6},
 		UnderPressure: {3, 1},
 		Defensive:     {4, 1},
 		Neutral:       {5, 1},
@@ -127,7 +132,7 @@ var roleMap = map[uint32]RegionMap{
 		OnAttack:      {7, 1},
 	},
 	11: {
-		Initial:       {3, 2},
+		Initial:       {3, 6},
 		UnderPressure: {3, 2},
 		Defensive:     {4, 2},
 		Neutral:       {6, 2},

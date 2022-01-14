@@ -2,8 +2,6 @@ package bot
 
 import (
 	"fmt"
-	"github.com/lugobots/lugo4go/v2/coach"
-	"github.com/lugobots/lugo4go/v2/proto"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -28,15 +26,15 @@ func TestDefineRole(t *testing.T) {
 // Note that this method only tests if the tactic settings are well defined. Does not test if the settings are defined
 // as you expect. Please create your own test to check your logic.
 func TestDetermineTeamState_ShouldHaveStateForAllCols(t *testing.T) {
-	p, err := coach.NewPositioner(RegionCols, RegionRows, proto.Team_HOME)
+	p, err := coach.NewPositioner(FieldGridCols, FieldGridRows, proto.Team_HOME)
 	if err != nil {
 		t.Fatalf("invalid settings, cannot created a NewPositioner: %s", err)
 	}
-	for i := uint8(0); i < RegionCols; i++ {
+	for i := uint8(0); i < FieldGridCols; i++ {
 
-		ballRegion, err := p.GetRegion(i, RegionRows/2)
+		ballRegion, err := p.GetRegion(i, FieldGridRows/2)
 		if err != nil {
-			t.Fatalf("could not test the team state when the ball is in col %d, row %d: %s", i, RegionRows/2, err)
+			t.Fatalf("could not test the team state when the ball is in col %d, row %d: %s", i, FieldGridRows/2, err)
 		}
 
 		_, err = DetermineTeamState(ballRegion, proto.Team_HOME, proto.Team_AWAY)
@@ -49,9 +47,9 @@ func TestDetermineTeamState_ShouldHaveStateForAllCols(t *testing.T) {
 // Note that this method only tests if the tactic settings are well defined. Does not test if the settings are defined
 // as you expect. Please create your own test to check your logic.
 func TestDefineRegionMap_ShouldMapAllPlayersInAllTeamStates(t *testing.T) {
-	// starting from 2 because the number goalkeeper has RegionMap
+	// starting from 2 because the number goalkeeper has PlayerActionRegions
 	for i := uint32(2); i <= 11; i++ {
-		regMap := DefineRegionMap(i)
+		regMap := DefinePlayerActionRegions(i)
 		assert.NotNil(t, regMap, fmt.Sprintf("missing maps for player %d", i))
 		for _, state := range knownTeamStates {
 			_, ok := regMap[state]
@@ -61,14 +59,14 @@ func TestDefineRegionMap_ShouldMapAllPlayersInAllTeamStates(t *testing.T) {
 }
 
 func TestDefineRegionMap_AllMappedRegionShouldBeCompatibleWithOurPositioner(t *testing.T) {
-	p, err := coach.NewPositioner(RegionCols, RegionRows, proto.Team_HOME)
+	p, err := coach.NewPositioner(FieldGridCols, FieldGridRows, proto.Team_HOME)
 	if err != nil {
 		t.Fatalf("invalid settings, cannot created a NewPositioner: %s", err)
 	}
 
-	// starting from 2 because the number goalkeeper has RegionMap
+	// starting from 2 because the number goalkeeper has PlayerActionRegions
 	for i := uint32(2); i <= 11; i++ {
-		regMap := DefineRegionMap(i)
+		regMap := DefinePlayerActionRegions(i)
 		assert.NotNil(t, regMap, fmt.Sprintf("missing maps for player %d", i))
 		for _, state := range knownTeamStates {
 			r := regMap[state]
