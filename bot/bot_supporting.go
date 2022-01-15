@@ -2,133 +2,108 @@ package bot
 
 import (
 	"context"
-	"fmt"
-	"github.com/lugobots/lugo4go/v2/coach"
-	"github.com/lugobots/lugo4go/v2/field"
-	"github.com/lugobots/lugo4go/v2/proto"
-	"sort"
+	"github.com/lugobots/lugo4go/v2"
+	"github.com/lugobots/lugo4go/v2/lugo"
+	"github.com/lugobots/lugo4go/v2/pkg/field"
+	"github.com/pkg/errors"
+	"log"
 )
 
-const supportersCount = 3
+const numberOfAssistsPlayers = 3
+const assistPlayerDistance = field.FieldWidth / 8
 
-func (b Bot) OnSupporting(ctx context.Context, turn coach.TurnData) error {
-	debugMsg := ""
-	b.LastBallHolder = turn.Snapshot.Ball.Holder.Number
-	supportPlayers := findClosestPlayers(turn.Snapshot.Ball.Holder, turn.Snapshot)
-	shouldSupport := false
-	for _, p := range supportPlayers {
-		if p.Number == turn.Me.Number {
-			shouldSupport = true
-			break
+func (b *Bot) OnSupporting(ctx context.Context, sender lugo4go.TurnOrdersSender, snapshot *lugo.GameSnapshot) error {
+	me := field.GetPlayer(snapshot, b.side, b.number)
+	opponentSide := field.GetOpponentSide(b.side)
+	myTeam := field.GetTeam(snapshot, b.side).GetPlayers()
+	opponentTeam := field.GetTeam(snapshot, opponentSide).GetPlayers()
+
+	shouldIAssist, _ := ShouldIAssist(me.Position, snapshot.Ball.Position, b.number, snapshot.Ball.Holder.Number, myTeam)
+	if shouldIAssist {
+		bestSpot := FindSpotsToAssist(snapshot.Ball.Holder.Position, me.Position, b.side, myTeam, opponentTeam)
+		speed := field.PlayerMaxSpeed
+		msg := "on my way"
+		if me.Position.DistanceTo(*bestSpot) < field.PlayerSize {
+			speed = 0
+			msg = "I am here"
+		}
+		log.Printf("N MY WAY- from %v to %v @%f", me.Position, bestSpot, speed)
+		moveOrder, err := field.MakeOrderMove(*me.Position, *bestSpot, speed)
+		if err != nil {
+			return errors.Wrap(err, "error creating moving order to assist")
+		}
+		return processServerResp(sender.Send(ctx, []lugo.PlayerOrder{moveOrder}, msg))
+	}
+	return b.holdPosition(ctx, sender, snapshot)
+}
+
+func ShouldIAssist(myPosition, ballPosition *lugo.Point, myNumber, holderNumber uint32, myTeam []*lugo.Player) (bool, []*lugo.Player) {
+	playerCloser := 0
+	myDistance := myPosition.DistanceTo(*ballPosition)
+
+	assistingPlayers := make([]*lugo.Player, 0, numberOfAssistsPlayers)
+	// should have at least 3 supporters in the perimeters around the ball holder
+	for _, teammate := range myTeam {
+		if teammate.Number != holderNumber && // the holder cannot help himself
+			teammate.Number != myNumber && // I won't count to myself
+			teammate.Position.DistanceTo(*ballPosition) < myDistance {
+			assistingPlayers = append(assistingPlayers, teammate)
+			playerCloser++
+			if playerCloser >= numberOfAssistsPlayers { // are there more than two player closer to the ball than me?
+				return false, assistingPlayers
+			}
 		}
 	}
-	if shouldSupport {
-		target, err := FindSpotToAssist(supportPlayers, turn.Snapshot.Ball.Holder, turn.Me, b.Positioner)
-		if err != nil {
-			debugMsg = "I could not find a good spot to be in"
-			b.log.Errorf("error finding a good stop to support the holder: %s", err)
-		} else {
-			moveOrder, err := field.MakeOrderMoveMaxSpeed(*turn.Me.Position, target)
-			debugMsg = "getting better position"
-			if target.DistanceTo(*turn.Me.Position) < DistanceNear {
-				debugMsg = "already in position"
-				moveOrder, err = field.MakeOrderMove(*turn.Me.Position, *turn.Snapshot.Ball.Position, 0)
-			}
+	return true, assistingPlayers
+}
+
+func FindSpotsToAssist(ballHolderPosition, botPosition *lugo.Point, teamSide lugo.Team_Side, assistPlayer, opponentTeam []*lugo.Player) *lugo.Point {
+	backPositionY := ballHolderPosition.Y - assistPlayerDistance
+	if teamSide == lugo.Team_AWAY {
+		backPositionY = ballHolderPosition.Y + assistPlayerDistance
+	}
+
+	perfectPositionBack := &lugo.Point{
+		X: ballHolderPosition.X,
+		Y: backPositionY,
+	}
+	perfectPositionLateralA := &lugo.Point{
+		X: ballHolderPosition.X,
+		Y: ballHolderPosition.Y - assistPlayerDistance,
+	}
+	perfectPositionLateralB := &lugo.Point{
+		X: ballHolderPosition.X,
+		Y: ballHolderPosition.Y + assistPlayerDistance,
+	}
+
+	positions := []*lugo.Point{perfectPositionBack, perfectPositionLateralA, perfectPositionLateralB}
+	for i, originalPos := range positions {
+		obstaclesBack, _ := findOpponentsOnMyRoute(originalPos, ballHolderPosition, field.PlayerSize, opponentTeam)
+		if len(obstaclesBack) > 0 {
+			v, err := lugo.NewVector(*botPosition, *obstaclesBack[0].position)
 			if err != nil {
-				return fmt.Errorf("was not able to move this turn: %s", err)
+				if obstaclesBack[0].distanceFromTrajectory > 0 {
+					v.Y = -v.Y
+				} else {
+					v.X = -v.X
+				}
+				_, _ = v.SetLength(field.PlayerSize)
+				fixedPosition := v.TargetFrom(*originalPos)
+				positions[i] = &fixedPosition
 			}
-			return send(ctx, turn, []proto.PlayerOrder{moveOrder}, debugMsg)
 		}
 	}
-	// @see Readme- ignored errors
-	ballRegion, _ := b.Positioner.GetPointRegion(*turn.Snapshot.Ball.Position)
 
-	// @see Readme- ignored errors
-	teamState, _ := DetermineTeamState(ballRegion, turn.Me.TeamSide, b.BallPossessionTeam)
-
-	// @see Readme- ignored errors
-	currentReg, _ := b.Positioner.GetPointRegion(*turn.Me.Position)
-
-	expectedRegion := GetMyRegion(teamState, b.Positioner, turn.Me.Number)
-
-	//b.log.Debugf("C %s, Ex %s", currentReg, expectedRegion)
-
-	var moveOrder *proto.Order_Move
-	var err error
-	if currentReg.String() != expectedRegion.String() {
-		moveOrder, err = field.MakeOrderMoveMaxSpeed(*turn.Me.Position, expectedRegion.Center())
-		if err != nil {
-			return fmt.Errorf("was not able to move this turn: %s", err)
-		}
-		debugMsg = fmt.Sprintf("moving to my region: %v", expectedRegion)
-	} else {
-		moveOrder, err = field.MakeOrderMove(*turn.Me.Position, *turn.Snapshot.Ball.Position, 0)
-		if err != nil {
-			return fmt.Errorf("was not able to move this turn: %s", err)
-		}
-		debugMsg = fmt.Sprintf("holding position (%s %s)", expectedRegion, currentReg)
-	}
-	return send(ctx, turn, []proto.PlayerOrder{moveOrder}, debugMsg)
-}
-
-func findClosestPlayers(ballHolder *proto.Player, snapshot *proto.GameSnapshot) []*proto.Player {
-	ballPosition := *snapshot.Ball.Holder.Position
-	l := make([]*proto.Player, len(field.GetTeam(snapshot, ballHolder.TeamSide).Players))
-	copy(l, field.GetTeam(snapshot, ballHolder.TeamSide).Players)
-	sort.Slice(l, func(i, j int) bool {
-		return l[i].Position.DistanceTo(ballPosition) < l[j].Position.DistanceTo(ballPosition)
-	})
-	return l[0:supportersCount]
-}
-
-type pair struct {
-	r coach.Region
-	p *proto.Player
-}
-
-type arrange struct {
-	Arr []pair
-	Sum float64
-}
-
-// this logic is based on having only 3 supporters.
-// Suggestion for improvements: find a strategic sport instead of just be besides the player
-func FindSpotToAssist(supporters []*proto.Player, holder *proto.Player, me *proto.Player, positioner coach.Positioner) (proto.Point, error) {
-	// Strategy: having one guy behind and two in front of the player holder
-	// the most close to the defensive goal, will be behind
-
-	holderRegion, _ := positioner.GetPointRegion(*holder.Position)
-	strategicRegions := make([]coach.Region, supportersCount) // this magic number is equals to the number of supporters plus some extra possibilities
-	// those are the regions we hopefully will have someone in
-	strategicRegions[0] = holderRegion.Front().Left()
-	strategicRegions[1] = holderRegion.Front().Right()
-	strategicRegions[2] = holderRegion.Left()
-	if strategicRegions[2].String() == holderRegion.String() {
-		strategicRegions[2] = holderRegion.Right()
-	}
-	arr := []arrange{}
-	for _, r := range strategicRegions {
-		arrA := arrange{
-			Arr: []pair{},
-		}
-		for _, p := range supporters {
-			arrA.Arr = append(arrA.Arr, pair{r: r, p: p})
-			d := r.Center()
-			arrA.Sum += d.DistanceTo(*p.Position)
-		}
-		arr = append(arr, arrA)
-	}
-
-	// find closest region from me
-	sort.Slice(arr, func(i, j int) bool {
-		return arr[i].Sum < arr[j].Sum
-	})
-
-	bestArrangement := arr[0]
-	for _, r := range bestArrangement.Arr {
-		if r.p.Number == me.Number {
-			return r.r.Center(), nil
+	// @todo needs enhancement: the closest spot is not always the most efficient because we must consider the other players
+	closestDistance := float64(field.FieldWidth)
+	var closestPosition lugo.Point
+	for _, position := range positions {
+		d := position.DistanceTo(*botPosition)
+		if d < closestDistance {
+			closestDistance = d
+			closestPosition = *position
 		}
 	}
-	return proto.Point{}, fmt.Errorf("player should be among the supporters")
+
+	return &closestPosition
 }
