@@ -84,12 +84,14 @@ func (b *Bot) OnHolding(ctx context.Context, sender lugo4go.TurnOrdersSender, sn
 func findEscapeRoute(botPosition lugo.Point, opponentTeam []*lugo.Player) *lugo.Vector {
 	var mainVector *lugo.Vector
 	for _, opponent := range opponentTeam {
-		vectorTowardTheOpponent, err := lugo.NewVector(botPosition, *opponent.Position)
-		if err == nil {
-			if mainVector == nil {
-				mainVector = vectorTowardTheOpponent
-			} else {
-				mainVector.Add(vectorTowardTheOpponent)
+		if botPosition.DistanceTo(*opponent.Position) < field.PlayerSize*5 {
+			vectorTowardTheOpponent, err := lugo.NewVector(botPosition, *opponent.Position)
+			if err == nil {
+				if mainVector == nil {
+					mainVector = vectorTowardTheOpponent
+				} else {
+					mainVector.Add(vectorTowardTheOpponent)
+				}
 			}
 		}
 	}
@@ -209,7 +211,7 @@ func shouldIHoldTheBall(me *lugo.Player, goal field.Goal, opponentTeam []*lugo.P
 		}
 	}
 
-	if closestOpponentDistance < field.PlayerSize*4 {
+	if closestOpponentDistance < field.PlayerSize*5 {
 		return ShouldNot
 	}
 

@@ -49,11 +49,6 @@ func (b *Bot) myActionRegion(teamState TeamState) field.Region {
 	return r
 }
 
-func (b *Bot) OnDefending(ctx context.Context, sender lugo4go.TurnOrdersSender, snapshot *lugo.GameSnapshot) error {
-
-	return b.holdPosition(ctx, sender, snapshot)
-}
-
 func (b *Bot) AsGoalkeeper(ctx context.Context, sender lugo4go.TurnOrdersSender, snapshot *lugo.GameSnapshot, state lugo4go.PlayerState) error {
 	// nothing
 	return nil
@@ -95,5 +90,5 @@ func (b *Bot) holdPosition(ctx context.Context, sender lugo4go.TurnOrdersSender,
 
 		return errors.Wrap(err, "error creating move order to return to action region")
 	}
-	return processServerResp(sender.Send(ctx, []lugo.PlayerOrder{moveOrder}, msg))
+	return processServerResp(sender.Send(ctx, []lugo.PlayerOrder{moveOrder, field.MakeOrderCatch()}, msg))
 }

@@ -37,11 +37,11 @@ func (b *Bot) OnDisputing(ctx context.Context, sender lugo4go.TurnOrdersSender, 
 
 func ShouldIDisputeForTheBall(mapper field.Mapper, botNumber uint32, botPosition, ballPosition *lugo.Point, teamMates []*lugo.Player) bool {
 
-	ballRegion, _ := mapper.GetPointRegion(ballPosition)
-	botRegion, _ := mapper.GetPointRegion(botPosition)
-	if DistanceBetweenRegions(botRegion, ballRegion) < 2 {
-		return true
-	}
+	//ballRegion, _ := mapper.GetPointRegion(ballPosition)
+	//botRegion, _ := mapper.GetPointRegion(botPosition)
+	//if DistanceBetweenRegions(botRegion, ballRegion) < 2 {
+	//	return true
+	//}
 	myDistance := ballPosition.DistanceTo(*botPosition)
 	playerCloser := 0
 	for _, teamMate := range teamMates {
