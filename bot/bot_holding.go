@@ -209,8 +209,12 @@ func shouldIHoldTheBall(me *lugo.Player, goal field.Goal, opponentTeam []*lugo.P
 		}
 	}
 
-	if closestOpponentDistance < field.PlayerSize*5 {
-		return Should
+	if closestOpponentDistance < field.PlayerSize*4 {
+		return ShouldNot
+	}
+
+	if closestOpponentDistance < field.PlayerSize*2 {
+		return MustNot
 	}
 
 	obstaclesToPlayer, err := findOpponentsOnMyRoute(me.Position, &goal.Center, field.PlayerSize*2, opponentTeam)
