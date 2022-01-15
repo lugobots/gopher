@@ -28,16 +28,12 @@ func DetermineTeamState(ballRegion field.Region, myTeamSide, possession lugo.Tea
 	regionCol := ballRegion.Col()
 	if possession == myTeamSide {
 		switch regionCol {
-		case 7, 8, 9:
+		case 5, 6, 7, 8, 9:
 			return OnAttack, nil
-		case 6:
+		case 2, 3, 4:
 			return Offensive, nil
-		case 3, 4, 5:
+		case 0, 1:
 			return Neutral, nil
-		case 1, 2:
-			return Defensive, nil
-		case 0:
-			return UnderPressure, nil
 		}
 
 	} else {
@@ -64,7 +60,7 @@ var roleMap = map[uint32]PlayerActionRegions{
 		Defensive:     {1, 3},
 		Neutral:       {2, 3},
 		Offensive:     {2, 3},
-		OnAttack:      {4, 3},
+		OnAttack:      {5, 3},
 	},
 	3: {
 		Initial:       {1, 5},
@@ -72,54 +68,54 @@ var roleMap = map[uint32]PlayerActionRegions{
 		Defensive:     {1, 4},
 		Neutral:       {2, 4},
 		Offensive:     {2, 4},
-		OnAttack:      {4, 4},
+		OnAttack:      {5, 4},
 	},
 	4: {
 		Initial:       {2, 6},
 		UnderPressure: {1, 6},
 		Defensive:     {2, 6},
 		Neutral:       {3, 6},
-		Offensive:     {4, 5},
-		OnAttack:      {5, 5},
+		Offensive:     {5, 5},
+		OnAttack:      {6, 5},
 	},
 	5: {
 		Initial:       {2, 1},
 		UnderPressure: {1, 1},
-		Defensive:     {1, 1},
+		Defensive:     {2, 1},
 		Neutral:       {3, 1},
 		Offensive:     {5, 2},
-		OnAttack:      {5, 2},
+		OnAttack:      {6, 2},
 	},
 	6: {
 		Initial:       {3, 6},
 		UnderPressure: {1, 5},
 		Defensive:     {2, 5},
 		Neutral:       {4, 5},
-		Offensive:     {5, 6},
-		OnAttack:      {6, 6},
+		Offensive:     {8, 7},
+		OnAttack:      {9, 6},
 	},
 	7: {
 		Initial:       {3, 1},
 		UnderPressure: {1, 2},
 		Defensive:     {2, 2},
 		Neutral:       {4, 2},
-		Offensive:     {5, 1},
-		OnAttack:      {6, 1},
+		Offensive:     {8, 0},
+		OnAttack:      {9, 1},
 	},
 	8: {
 		Initial:       {3, 3},
 		UnderPressure: {1, 3},
-		Defensive:     {2, 3},
+		Defensive:     {3, 3},
 		Neutral:       {4, 3},
-		Offensive:     {6, 2},
-		OnAttack:      {7, 2},
+		Offensive:     {6, 3},
+		OnAttack:      {7, 3},
 	},
 	9: {
 		Initial:       {3, 4},
 		UnderPressure: {1, 4},
 		Defensive:     {3, 4},
 		Neutral:       {4, 4},
-		Offensive:     {6, 5},
+		Offensive:     {6, 4},
 		OnAttack:      {7, 4},
 	},
 	10: {

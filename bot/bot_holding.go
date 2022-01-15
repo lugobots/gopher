@@ -7,7 +7,6 @@ import (
 	"github.com/lugobots/lugo4go/v2/lugo"
 	"github.com/lugobots/lugo4go/v2/pkg/field"
 	"github.com/pkg/errors"
-	"log"
 	"math"
 )
 
@@ -42,7 +41,6 @@ func (b *Bot) OnHolding(ctx context.Context, sender lugo4go.TurnOrdersSender, sn
 	shouldIHold := shouldIHoldTheBall(me, opponentGoal, opponentTeam)
 	shouldIPass, bestCandidate := shouldIPass(me, snapshot.Ball.Position, opponentGoalKeeper.Position, opponentGoal, myTeam, opponentTeam)
 
-	log.Printf("Should I hold? %v, $should I pass? %v", shouldIHold, shouldIPass)
 	// we really need to pass the ball, but looks like there are no good options, let's just stop
 	// todo needs enhancement We should look for a better path to avoid obstacles
 	if shouldIHold < May && shouldIPass < May {
@@ -189,7 +187,6 @@ func shouldIHoldTheBall(me *lugo.Player, goal field.Goal, opponentTeam []*lugo.P
 	if err != nil {
 		return ShouldNot
 	}
-	log.Printf("Obstables %d", len(obstaclesToPlayer))
 	if len(obstaclesToPlayer) == 0 {
 		return Must
 	}
