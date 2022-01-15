@@ -3,257 +3,204 @@ package bot
 import (
 	"context"
 	"fmt"
-	"github.com/lugobots/lugo4go/v2/coach"
-	"github.com/lugobots/lugo4go/v2/field"
-	"github.com/lugobots/lugo4go/v2/geo"
-	"github.com/lugobots/lugo4go/v2/proto"
+	"github.com/lugobots/lugo4go/v2"
+	"github.com/lugobots/lugo4go/v2/lugo"
+	"github.com/lugobots/lugo4go/v2/pkg/field"
+	"github.com/pkg/errors"
+	"log"
 	"math"
-	"sort"
 )
 
-func (b Bot) OnHolding(ctx context.Context, data coach.TurnData) error {
-	b.BallPossessionTeam = data.Me.TeamSide
-	b.LastBallHolder = 0
-
-	shootDecision := b.evaluator.ShootingEvaluation(data.Me, data.Snapshot)
-	playerCandidates := b.evaluator.GetPassingCandidates(data.Me, data.Snapshot, b.LastBallHolder)
-	passingDecision := b.evaluator.PassingEvaluation(data.Me, data.Snapshot, playerCandidates)
-
-	b.log.Debugf("Shoot: %d, passing: %d", shootDecision, passingDecision)
-	// @explain:
-	// 				Passing:	MustNot			shouldNot		may			Should			Must
-	// Shooting:
-	// MustNot					Advance			Advance			Advance		Pass			Pass
-	// ShouldNot				Advance			Advance			Advance		Pass			Pass
-	// May						Advance			Advance			CheckScore	Pass			Pass
-	// Should					Shoot			Shoot			Shoot		Shoot			Shoot
-	// Must						Shoot			Shoot			Shoot		Shoot			Shoot
-	goalTarget := field.GetOpponentGoal(data.Me.TeamSide).Center
-	if shootDecision >= Should {
-		kickOrder, err := field.MakeOrderKick(*data.Snapshot.Ball, goalTarget, field.BallMaxSpeed)
+func (b *Bot) OnHolding(ctx context.Context, sender lugo4go.TurnOrdersSender, snapshot *lugo.GameSnapshot) error {
+	opponentSide := field.GetOpponentSide(b.side)
+	opponentGoalKeeper := field.GetPlayer(snapshot, opponentSide, field.GoalkeeperNumber)
+	opponentTeam := field.GetTeam(snapshot, opponentSide).GetPlayers()
+	shouldIShoot, target := ShouldShoot(
+		snapshot.Ball.Position,
+		opponentGoalKeeper.Position,
+		field.GetOpponentGoal(b.side),
+		field.GetTeam(snapshot, opponentSide).GetPlayers(),
+	)
+	if shouldIShoot >= Should {
+		kickOrder, err := field.MakeOrderKickMaxSpeed(*snapshot.Ball, *target)
 		if err != nil {
-			return fmt.Errorf("was not able to shoot: %s", err)
+			return errors.Wrap(err, "error creating kicking order to shoot on goal")
 		}
-		return send(ctx, data, []proto.PlayerOrder{kickOrder}, "shooting!")
+		b.lastKickTurn = snapshot.Turn
+		return processServerResp(sender.Send(ctx, []lugo.PlayerOrder{kickOrder}, "shoot"))
 	}
-	// @speed-buster: we should check if there is a player, and avoid panics. However, "passingDecision" would not
-	// be "positive" if there was not candidates.
-	playerTarget := playerCandidates[0]
-	if passingDecision >= Should { //|| (shootDecision == May && passingDecision == May && playerTarget.ShootingEvaluation > shootDecision) {
-		kickOrder, err := field.MakeOrderKick(*data.Snapshot.Ball, *playerTarget.Player.Position, field.BallMaxSpeed)
+
+	me := field.GetPlayer(snapshot, b.side, b.number)
+	myTeam := field.GetTeam(snapshot, b.side).GetPlayers()
+	opponentGoal := field.GetOpponentGoal(b.side)
+
+	moveForwardOrder := field.GoForward(b.side)
+	if math.Abs(float64(me.Position.Y-opponentGoal.Center.Y)) < float64(DistanceFar) {
+		moveForwardOrder, _ = field.MakeOrderMoveMaxSpeed(*me.Position, opponentGoal.Center)
+	}
+
+	shouldIHold := shouldIHoldTheBall(me, opponentGoal, opponentTeam)
+	shouldIPass, bestCandidate := shouldIPass(me, snapshot.Ball.Position, opponentGoalKeeper.Position, opponentGoal, myTeam, opponentTeam)
+
+	log.Printf("Should I hold? %v, $should I pass? %v", shouldIHold, shouldIPass)
+	// we really need to pass the ball, but looks like there are no good options, let's just stop
+	// todo needs enhancement We should look for a better path to avoid obstacles
+	if shouldIHold < May && shouldIPass < May {
+		stopOrder, err := field.MakeOrderMove(*me.Position, opponentGoal.Center, 0)
 		if err != nil {
-			return fmt.Errorf("was not able to pass: %s", err)
+			return errors.Wrap(err, "error creating kicking order to pass")
 		}
-		return send(ctx, data, []proto.PlayerOrder{kickOrder}, fmt.Sprintf("passing! [%d] %v (vs %v)", passingDecision, playerTarget.Score, playerCandidates[1].Score))
+		return processServerResp(sender.Send(ctx, []lugo.PlayerOrder{stopOrder}, "oops, I am blocked"))
 	}
 
-	//advance
-	moveOrder, err := field.MakeOrderMoveMaxSpeed(*data.Me.Position, goalTarget)
-	if err != nil {
-		return fmt.Errorf("was not able to move forward: %s", err)
+	if shouldIPass < Should && shouldIShoot == May {
+		kickOrder, err := field.MakeOrderKickMaxSpeed(*snapshot.Ball, *target)
+		if err != nil {
+			return errors.Wrap(err, "error creating kicking order to shoot on goal")
+		}
+		b.lastKickTurn = snapshot.Turn
+		return processServerResp(sender.Send(ctx, []lugo.PlayerOrder{kickOrder}, "shoot"))
 	}
-	return send(ctx, data, []proto.PlayerOrder{moveOrder}, "advancing!")
+
+	if shouldIPass > ShouldNot {
+		if shouldIPass == May {
+			obstaclesToPlayer, err := findOpponentsOnMyRoute(me.Position, &opponentGoal.Center, field.BallSize, opponentTeam)
+			// before passing, if we can advance a little more, let keep moving forward
+			if err == nil && (len(obstaclesToPlayer) == 0 || obstaclesToPlayer[0].position.DistanceTo(*me.Position) > 4*field.PlayerSize) {
+				return processServerResp(sender.Send(ctx, []lugo.PlayerOrder{moveForwardOrder}, "continue, champ!"))
+			}
+		}
+
+		kickOrder, err := field.MakeOrderKickMaxSpeed(*snapshot.Ball, *bestCandidate.Position)
+		if err != nil {
+			return errors.Wrap(err, "error creating kicking order to pass")
+		}
+		b.lastKickTurn = snapshot.Turn
+		return processServerResp(sender.Send(ctx, []lugo.PlayerOrder{kickOrder}, "passing"))
+	}
+	return processServerResp(sender.Send(ctx, []lugo.PlayerOrder{moveForwardOrder}, fmt.Sprintf("just keep swimming: %v", b.side.String())))
 }
 
-type evaluator interface {
-	ShootingEvaluation(me *proto.Player, snapshot *proto.GameSnapshot) FuzzyScale
-	PassingEvaluation(me *proto.Player, snapshot *proto.GameSnapshot, candidates []PassingScore) FuzzyScale
-	GetPassingCandidates(me *proto.Player, snapshot *proto.GameSnapshot, lastHolder uint32) []PassingScore
-	CountObstacles(me *proto.Player, target proto.Point, opponents []*proto.Player) int
-	CountCloseOpponents(teamMate *proto.Player, opponents []*proto.Player) int
-}
-
-type e struct {
-}
-
-func (e e) ShootingEvaluation(me *proto.Player, snapshot *proto.GameSnapshot) FuzzyScale {
-	return ShootingEvaluation(me, snapshot)
-}
-
-func (e e) PassingEvaluation(me *proto.Player, snapshot *proto.GameSnapshot, candidates []PassingScore) FuzzyScale {
-	return PassingEvaluation(me, snapshot, candidates)
-}
-
-func (e e) GetPassingCandidates(me *proto.Player, snapshot *proto.GameSnapshot, lastHolder uint32) []PassingScore {
-	return GetPassingCandidates(e, me, snapshot, lastHolder)
-}
-
-func (e e) CountObstacles(me *proto.Player, target proto.Point, opponents []*proto.Player) int {
-	return countObstacles(me, target, opponents)
-}
-
-func (e e) CountCloseOpponents(teamMate *proto.Player, opponents []*proto.Player) int {
-	return countCloseOpponents(teamMate, opponents)
-}
-
-func ShootingEvaluation(me *proto.Player, snapshot *proto.GameSnapshot) FuzzyScale {
-	opponentSide := field.GetOpponentSide(me.TeamSide)
-	goalCenter := field.GetTeamsGoal(opponentSide).Center
-	distanceToShoot := snapshot.Ball.Position.DistanceTo(goalCenter)
+func ShouldShoot(ballPosition, goalKeeperPosition *lugo.Point, goal field.Goal, opponentTeam []*lugo.Player) (FuzzyScale, *lugo.Point) {
+	distanceToShoot := DistanceForShooting(ballPosition, goal)
 	if distanceToShoot >= DistanceFar {
-		return MustNot
+		return MustNot, nil
 	}
 
-	if distanceToShoot >= DistanceNear*1.5 {
-		return ShouldNot
+	betterTargetShoot := FindBestPointShootTheBall(goalKeeperPosition, goal)
+
+	// @todo needs enhancement: if an opponent player stays in our way inside the goal zone, the player won't kick neither advance
+	obstaclesToTarget, err := findOpponentsOnMyRoute(ballPosition, &betterTargetShoot, field.PlayerSize, opponentTeam)
+	if err != nil {
+		return MustNot, &goal.Center
 	}
-	// should not count the goal keeper
-	obstacles := countObstacles(me, goalCenter, field.GetTeam(snapshot, opponentSide).Players)
 
-	if obstacles > 0 {
-		if distanceToShoot < DistanceNear {
-
+	if len(obstaclesToTarget) == 0 {
+		if distanceToShoot <= DistanceBeside {
+			return Must, &betterTargetShoot
 		}
-
-		//	DECIDIR ESSA MERDA DEPOIS
-
-		return May
-	} else if obstacles == 0 { // close, but with obstacles
-		return Should
+		if distanceToShoot <= DistanceNear {
+			return Should, &betterTargetShoot
+		}
+		if distanceToShoot <= DistanceFar {
+			return May, &betterTargetShoot
+		}
+		return ShouldNot, &betterTargetShoot
 	}
-	// no obstacles, and pretty close!
-	return Must
+	return ShouldNot, &betterTargetShoot
 }
 
-func PassingEvaluation(me *proto.Player, snapshot *proto.GameSnapshot, candidates []PassingScore) FuzzyScale {
+// DistanceForShooting gets the distance from the ball to the goal center or one of the goal's poles. Whatever is closer
+func DistanceForShooting(ballPosition *lugo.Point, goal field.Goal) float64 {
+	ref := goal.Center
+	if ballPosition.Y < field.GoalMinY {
+		ref = goal.BottomPole
+	} else if ballPosition.Y > field.GoalMaxY {
+		ref = goal.TopPole
+	}
+	return ballPosition.DistanceTo(ref)
+}
 
-	// @explain:
-	// first, let's evaluate based on the risk of losing the ball possession
-	// Is there a too close opponent?
-	// Is there an opponent approaching me?
+// FindBestPointShootTheBall find a good target in the opponent goal to shoot the ball at.
+// @todo needs enhancement: the method is only choosing a side of the goal, but could consider the player position
+func FindBestPointShootTheBall(opponentGoalKeeperPosition *lugo.Point, opponentGoal field.Goal) (target lugo.Point) {
+	if opponentGoalKeeperPosition.Y > opponentGoal.Center.Y {
+		return lugo.Point{
+			X: opponentGoal.BottomPole.X,
+			Y: opponentGoal.BottomPole.Y + (field.BallSize / 2),
+		}
+	} else {
+		return lugo.Point{
+			X: opponentGoal.TopPole.X,
+			Y: opponentGoal.TopPole.Y - (field.BallSize / 2),
+		}
+	}
+}
 
-	// too close, pass NOW!
-	closestDistance := float64(field.FieldWidth)
-	goalTarget := field.GetOpponentGoal(me.TeamSide).Center
-	goalDirection, _ := proto.NewVector(*snapshot.Ball.Position, goalTarget)
+func shouldIPass(me *lugo.Player, ballPosition, goalKeeperPosition *lugo.Point, goal field.Goal, myTeam, opponentTeam []*lugo.Player) (FuzzyScale, *lugo.Player) {
+	passingDecision := MustNot
+	bestCandidateScore := 0
+	var bestCandidate *lugo.Player
+	for _, teammate := range myTeam {
+		if teammate.Number == me.Number {
+			continue
+		}
+		distanceFromMe := me.Position.DistanceTo(*teammate.Position)
+		obstaclesToPlayer, err := findOpponentsOnMyRoute(me.Position, teammate.Position, field.BallSize, opponentTeam)
+		if err != nil || len(obstaclesToPlayer) > 0 {
+			continue
+		}
 
-	for _, opponent := range field.GetTeam(snapshot, field.GetOpponentSide(me.TeamSide)).Players {
-		if opponent.Number != field.GoalkeeperNumber {
-			distance := opponent.Position.DistanceTo(*opponent.Position)
-			angle := geo.AngleWithRoute(*goalDirection, *me.Position, *opponent.Position)
-			if distance < field.PlayerSize*1.5 || angle < AngleOpponentObstacle {
-				return Must
-			}
-			if distance < closestDistance {
-				closestDistance = distance
+		teammateScore := 1
+		shouldShoot, _ := ShouldShoot(ballPosition, goalKeeperPosition, goal, myTeam)
+		switch shouldShoot {
+		case May:
+			teammateScore = 3
+		case Should:
+			teammateScore = 5
+		case Must:
+			teammateScore = 7
+		}
+		if distanceFromMe <= DistanceBeside {
+			teammateScore *= 3
+		} else if distanceFromMe <= DistanceNear {
+			teammateScore *= 2
+		} else if distanceFromMe >= DistanceTooFar {
+			teammateScore *= 0
+		}
+
+		if teammateScore > bestCandidateScore {
+			bestCandidate = teammate
+			bestCandidateScore = teammateScore
+			if teammateScore <= 7 {
+				passingDecision = May
+			} else if teammateScore < 14 {
+				passingDecision = Should
+			} else {
+				passingDecision = Must
 			}
 		}
 	}
-	// Getting close, better to pass!
-	if closestDistance < field.PlayerSize*1.5 {
-		return Should
-	}
+	return passingDecision, bestCandidate
+}
 
-	// @explain:
-	// Now we know we are safe to pass or not based on the team player positions
-	// are there any player I can pass to?
-	// Is there a player who may score?
-	// Is there a player with no obstacle between we?
-	if len(candidates) == 0 { //that's really hard to happen, but it is possible.
+func shouldIHoldTheBall(me *lugo.Player, goal field.Goal, opponentTeam []*lugo.Player) FuzzyScale {
+	obstaclesToPlayer, err := findOpponentsOnMyRoute(me.Position, &goal.Center, field.PlayerSize*2, opponentTeam)
+	if err != nil {
 		return ShouldNot
 	}
-
-	//best player to get the pass
-	bastCandidate := candidates[0]
-	// a positive score means that the player is a great position and/or with a chance to score
-	if bastCandidate.Score > 0 {
+	log.Printf("Obstables %d", len(obstaclesToPlayer))
+	if len(obstaclesToPlayer) == 0 {
 		return Must
 	}
+	closerObstacleDist := obstaclesToPlayer[0].position.DistanceTo(*me.Position)
+	if closerObstacleDist > DistanceFar {
+		return Should
+	}
 
-	if bastCandidate.Score > -ObstaclePenalty {
+	if closerObstacleDist > DistanceNear {
 		return May
 	}
 
-	// Bad news: all players are in bad positions
-	// Good news: we do not have to pass now.
 	return MustNot
-}
-
-type PassingScore struct {
-	Player             *proto.Player
-	Score              int
-	ShootingEvaluation FuzzyScale
-}
-
-const ObstaclePenalty = 12
-const CloseOpponentsPenalty = 5
-const LastHolderPenalty = 20
-const DistancePenalty = 2
-const GoalChanceBonus = 20
-const LocationBonus = 2
-const AngleOpponentObstacle = 10
-const closeOpponentDistance = field.PlayerSize
-
-func GetPassingCandidates(e evaluator, me *proto.Player, snapshot *proto.GameSnapshot, lastHolder uint32) []PassingScore {
-	candidates := []PassingScore{}
-
-	myDistanceToGoal := me.Position.DistanceTo(field.GetTeamsGoal(me.TeamSide).Center)
-	opponents := field.GetTeam(snapshot, field.GetOpponentSide(me.TeamSide)).Players
-
-	for _, p := range field.GetTeam(snapshot, me.TeamSide).Players {
-		// don't pass to the goal keeper, neither to myself
-		if p.Number != field.GoalkeeperNumber && p.Number != me.Number {
-
-			distanceFromMe := p.Position.DistanceTo(*me.Position)
-			if distanceFromMe >= DistanceFar {
-				continue
-			}
-
-			punctuation := 0
-			punctuation -= e.CountObstacles(me, *p.Position, opponents) * ObstaclePenalty
-			punctuation -= e.CountCloseOpponents(p, opponents) * CloseOpponentsPenalty
-			punctuation -= (int(distanceFromMe) / DistanceNear) * DistancePenalty
-			if p.Number == lastHolder {
-				punctuation -= LastHolderPenalty
-			}
-			goalEvaluation := e.ShootingEvaluation(p, snapshot)
-			if goalEvaluation > May {
-				punctuation += GoalChanceBonus
-			}
-			distanceToGoal := p.Position.DistanceTo(field.GetTeamsGoal(p.TeamSide).Center)
-			if distanceToGoal > myDistanceToGoal {
-				punctuation += (int(distanceToGoal) / DistanceNear) * LocationBonus
-			}
-			candidates = append(candidates, PassingScore{
-				Player:             p,
-				Score:              punctuation,
-				ShootingEvaluation: goalEvaluation,
-			})
-		}
-	}
-	sort.Slice(candidates, func(i, j int) bool {
-		if candidates[i].Score == candidates[j].Score {
-			return candidates[i].ShootingEvaluation > candidates[j].ShootingEvaluation
-		}
-		return candidates[i].Score > candidates[j].Score
-	})
-	return candidates
-}
-
-func countObstacles(me *proto.Player, target proto.Point, opponents []*proto.Player) int {
-	obstacles := 0
-	if passDirection, err := proto.NewVector(*me.Position, target); err == nil && passDirection != nil {
-		distanceToTeamMate := me.Position.DistanceTo(target)
-		for _, opponent := range opponents {
-			distanceToOpponent := me.Position.DistanceTo(*opponent.Position)
-			if distanceToTeamMate >= distanceToOpponent {
-				angle := geo.AngleWithRoute(*passDirection, *me.Position, *opponent.Position)
-				obstacle := math.Sin(angle * math.Pi / 180)
-				if math.Abs(angle) < 90 && obstacle*distanceToOpponent < field.BallSize*2 {
-					obstacles++
-				}
-			}
-		}
-	}
-	return obstacles
-}
-
-func countCloseOpponents(teamMate *proto.Player, opponents []*proto.Player) int {
-	closeOpponents := 0
-	for _, opponent := range opponents {
-		if opponent.Position.DistanceTo(*teamMate.Position) < closeOpponentDistance {
-			closeOpponents++
-		}
-	}
-	return closeOpponents
 }

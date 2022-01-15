@@ -40,8 +40,10 @@ const (
 )
 
 const (
-	DistanceNear = field.FieldWidth / 8
-	DistanceFar  = DistanceNear * 3
+	DistanceBeside = field.FieldWidth / 10
+	DistanceNear   = field.FieldWidth / 8
+	DistanceFar    = field.FieldWidth / 6
+	DistanceTooFar = field.FieldWidth / 4
 )
 
 type RegionCode struct {
