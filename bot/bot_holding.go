@@ -44,11 +44,13 @@ func (b *Bot) OnHolding(ctx context.Context, sender lugo4go.TurnOrdersSender, sn
 	// we really need to pass the ball, but looks like there are no good options, let's just stop
 	// todo needs enhancement We should look for a better path to avoid obstacles
 	if shouldIHold < May && shouldIPass < May {
-		stopOrder, err := field.MakeOrderMove(*me.Position, opponentGoal.Center, 0)
+		escapeRoute := findEscapeRoute(*me.Position, opponentTeam)
+		escapePoint := escapeRoute.TargetFrom(*me.Position)
+		stopOrder, err := field.MakeOrderMoveMaxSpeed(*me.Position, escapePoint)
 		if err != nil {
 			return errors.Wrap(err, "error creating kicking order to pass")
 		}
-		return processServerResp(sender.Send(ctx, []lugo.PlayerOrder{stopOrder}, "oops, I am blocked"))
+		return processServerResp(sender.Send(ctx, []lugo.PlayerOrder{stopOrder}, "oops, finding a way to escape"))
 	}
 
 	if shouldIPass < Should && shouldIShoot == May {
@@ -77,6 +79,22 @@ func (b *Bot) OnHolding(ctx context.Context, sender lugo4go.TurnOrdersSender, sn
 		return processServerResp(sender.Send(ctx, []lugo.PlayerOrder{kickOrder}, "passing"))
 	}
 	return processServerResp(sender.Send(ctx, []lugo.PlayerOrder{moveForwardOrder}, fmt.Sprintf("just keep swimming: %v", b.side.String())))
+}
+
+func findEscapeRoute(botPosition lugo.Point, opponentTeam []*lugo.Player) *lugo.Vector {
+	var mainVector *lugo.Vector
+	for _, opponent := range opponentTeam {
+		vectorTowardTheOpponent, err := lugo.NewVector(botPosition, *opponent.Position)
+		if err == nil {
+			if mainVector == nil {
+				mainVector = vectorTowardTheOpponent
+			} else {
+				mainVector.Add(vectorTowardTheOpponent)
+			}
+		}
+	}
+	// let's not wast time checking if it is nil! the chances are way too low
+	return mainVector.Invert()
 }
 
 func ShouldShoot(ballPosition, goalKeeperPosition *lugo.Point, goal field.Goal, opponentTeam []*lugo.Player) (FuzzyScale, *lugo.Point) {
@@ -183,6 +201,18 @@ func shouldIPass(me *lugo.Player, ballPosition, goalKeeperPosition *lugo.Point, 
 }
 
 func shouldIHoldTheBall(me *lugo.Player, goal field.Goal, opponentTeam []*lugo.Player) FuzzyScale {
+	closestOpponentDistance := float64(field.FieldWidth)
+	for _, opponent := range opponentTeam {
+		distToMe := opponent.Position.DistanceTo(*me.Position)
+		if distToMe < closestOpponentDistance {
+			closestOpponentDistance = distToMe
+		}
+	}
+
+	if closestOpponentDistance < field.PlayerSize*5 {
+		return Should
+	}
+
 	obstaclesToPlayer, err := findOpponentsOnMyRoute(me.Position, &goal.Center, field.PlayerSize*2, opponentTeam)
 	if err != nil {
 		return ShouldNot
