@@ -14,16 +14,17 @@ func processServerResp(resp *lugo.OrderResponse, err error) error {
 	if err != nil {
 		return errors.Wrapf(err, "error sending orders")
 	}
-	if resp.Code == lugo.OrderResponse_SUCCESS {
-		return errors.Errorf("server responded a non-success code: %s", resp.GetCode().Descriptor())
+	if resp.Code != lugo.OrderResponse_SUCCESS {
+		return errors.Errorf("server responded a non-success code: %s", resp.Code.String())
 	}
 	return nil
 }
 
 func (b *Bot) OnDisputing(ctx context.Context, sender lugo4go.TurnOrdersSender, snapshot *lugo.GameSnapshot) error {
+	shouldNotCatch := snapshot.Turn-b.lastKickTurn <= afterKickingWaitingTime
 	me := field.GetPlayer(snapshot, b.side, b.number)
 
-	if ShouldIDisputeForTheBall(b.mapper, b.number, me.Position, snapshot.Ball.Position, field.GetTeam(snapshot, b.side).Players) {
+	if !shouldNotCatch && ShouldIDisputeForTheBall(b.mapper, b.number, me.Position, snapshot.Ball.Position, field.GetTeam(snapshot, b.side).Players) {
 		speed, target := FindBestPointInterceptBall(snapshot.GetBall(), me)
 		moveOrder, err := field.MakeOrderMove(*me.Position, *target, speed)
 		if err != nil {
@@ -31,28 +32,17 @@ func (b *Bot) OnDisputing(ctx context.Context, sender lugo4go.TurnOrdersSender, 
 		}
 		return processServerResp(sender.Send(ctx, []lugo.PlayerOrder{moveOrder, field.MakeOrderCatch()}, "disputing for the ball"))
 	}
-	ballRegion, _ := b.mapper.GetPointRegion(snapshot.Ball.Position)
-	teamState, _ := DetermineTeamState(ballRegion, b.side, b.side)
-	actionRegion := b.myActionRegion(teamState)
-	if currentRegion, _ := b.mapper.GetPointRegion(me.Position); currentRegion != b.myActionRegion(teamState) {
-		moveOrder, err := field.MakeOrderMoveMaxSpeed(*me.Position, *actionRegion.Center())
-		if err != nil {
-			return errors.Wrap(err, "error creating move order to return to action region")
-		}
-		return processServerResp(sender.Send(ctx, []lugo.PlayerOrder{moveOrder, field.MakeOrderCatch()}, "moving to my region"))
-	}
-
-	moveOrder, _ := field.MakeOrderMoveMaxSpeed(*me.Position, field.FieldCenter())
-	return processServerResp(sender.Send(ctx, []lugo.PlayerOrder{moveOrder}, "Holding position"))
+	return b.holdPosition(ctx, sender, snapshot)
 }
 
 func ShouldIDisputeForTheBall(mapper field.Mapper, botNumber uint32, botPosition, ballPosition *lugo.Point, teamMates []*lugo.Player) bool {
+
 	ballRegion, _ := mapper.GetPointRegion(ballPosition)
 	botRegion, _ := mapper.GetPointRegion(botPosition)
 	if DistanceBetweenRegions(botRegion, ballRegion) < 2 {
 		return true
 	}
-	myDistance := ballPosition.DistanceTo(*ballPosition)
+	myDistance := ballPosition.DistanceTo(*botPosition)
 	playerCloser := 0
 	for _, teamMate := range teamMates {
 		if teamMate.Number != botNumber && teamMate.Position.DistanceTo(*ballPosition) < myDistance {
