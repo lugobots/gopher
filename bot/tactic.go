@@ -2,8 +2,8 @@ package bot
 
 import (
 	"fmt"
-	"github.com/lugobots/lugo4go/v2/lugo"
 	"github.com/lugobots/lugo4go/v2/pkg/field"
+	proto "github.com/lugobots/lugo4go/v2/proto"
 )
 
 const (
@@ -24,7 +24,7 @@ func DefineRole(number uint32) Role {
 	return ""
 }
 
-func DetermineTeamState(ballRegion field.Region, myTeamSide, possession lugo.Team_Side) (s TeamState, e error) {
+func DetermineTeamState(ballRegion field.Region, myTeamSide, possession proto.Team_Side) (s TeamState, e error) {
 	regionCol := ballRegion.Col()
 	if possession == myTeamSide {
 		switch regionCol {

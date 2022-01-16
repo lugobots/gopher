@@ -1,8 +1,8 @@
 package bot
 
 import (
-	"github.com/lugobots/lugo4go/v2/lugo"
 	"github.com/lugobots/lugo4go/v2/pkg/field"
+	proto "github.com/lugobots/lugo4go/v2/proto"
 	"github.com/pkg/errors"
 	"math"
 	"sort"
@@ -16,11 +16,11 @@ func DistanceBetweenRegions(a, b field.Region) float64 {
 }
 
 type obstacleDetails struct {
-	position               *lugo.Point
+	position               *proto.Point
 	distanceFromTrajectory float64
 }
 
-func findOpponentsOnMyRoute(origin, target *lugo.Point, margin float64, opponentTeam []*lugo.Player) ([]obstacleDetails, error) {
+func findOpponentsOnMyRoute(origin, target *proto.Point, margin float64, opponentTeam []*proto.Player) ([]obstacleDetails, error) {
 	var obstacles []obstacleDetails
 
 	minX := int32(math.Min(float64(origin.X), float64(target.X)))

@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 	"github.com/lugobots/lugo4go/v2"
-	"github.com/lugobots/lugo4go/v2/lugo"
 	"github.com/lugobots/lugo4go/v2/pkg/field"
+	proto "github.com/lugobots/lugo4go/v2/proto"
 	"github.com/pkg/errors"
 	"math"
 )
 
-func (b *Bot) OnHolding(ctx context.Context, sender lugo4go.TurnOrdersSender, snapshot *lugo.GameSnapshot) error {
+func (b *Bot) OnHolding(ctx context.Context, sender lugo4go.TurnOrdersSender, snapshot *proto.GameSnapshot) error {
 	opponentSide := field.GetOpponentSide(b.side)
 	opponentGoalKeeper := field.GetPlayer(snapshot, opponentSide, field.GoalkeeperNumber)
 	opponentTeam := field.GetTeam(snapshot, opponentSide).GetPlayers()
@@ -26,7 +26,7 @@ func (b *Bot) OnHolding(ctx context.Context, sender lugo4go.TurnOrdersSender, sn
 			return errors.Wrap(err, "error creating kicking order to shoot on goal")
 		}
 		b.lastKickTurn = snapshot.Turn
-		return processServerResp(sender.Send(ctx, []lugo.PlayerOrder{kickOrder}, "shoot"))
+		return processServerResp(sender.Send(ctx, []proto.PlayerOrder{kickOrder}, "shoot"))
 	}
 
 	me := field.GetPlayer(snapshot, b.side, b.number)
@@ -50,7 +50,7 @@ func (b *Bot) OnHolding(ctx context.Context, sender lugo4go.TurnOrdersSender, sn
 		if err != nil {
 			return errors.Wrap(err, "error creating kicking order to pass")
 		}
-		return processServerResp(sender.Send(ctx, []lugo.PlayerOrder{stopOrder}, "oops, finding a way to escape"))
+		return processServerResp(sender.Send(ctx, []proto.PlayerOrder{stopOrder}, "oops, finding a way to escape"))
 	}
 
 	if shouldIPass < Should && shouldIShoot == May {
@@ -59,7 +59,7 @@ func (b *Bot) OnHolding(ctx context.Context, sender lugo4go.TurnOrdersSender, sn
 			return errors.Wrap(err, "error creating kicking order to shoot on goal")
 		}
 		b.lastKickTurn = snapshot.Turn
-		return processServerResp(sender.Send(ctx, []lugo.PlayerOrder{kickOrder}, "shoot"))
+		return processServerResp(sender.Send(ctx, []proto.PlayerOrder{kickOrder}, "shoot"))
 	}
 
 	if shouldIPass > ShouldNot {
@@ -67,7 +67,7 @@ func (b *Bot) OnHolding(ctx context.Context, sender lugo4go.TurnOrdersSender, sn
 			obstaclesToPlayer, err := findOpponentsOnMyRoute(me.Position, &opponentGoal.Center, field.BallSize, opponentTeam)
 			// before passing, if we can advance a little more, let keep moving forward
 			if err == nil && (len(obstaclesToPlayer) == 0 || obstaclesToPlayer[0].position.DistanceTo(*me.Position) > 4*field.PlayerSize) {
-				return processServerResp(sender.Send(ctx, []lugo.PlayerOrder{moveForwardOrder}, "continue, champ!"))
+				return processServerResp(sender.Send(ctx, []proto.PlayerOrder{moveForwardOrder}, "continue, champ!"))
 			}
 		}
 
@@ -76,16 +76,16 @@ func (b *Bot) OnHolding(ctx context.Context, sender lugo4go.TurnOrdersSender, sn
 			return errors.Wrap(err, "error creating kicking order to pass")
 		}
 		b.lastKickTurn = snapshot.Turn
-		return processServerResp(sender.Send(ctx, []lugo.PlayerOrder{kickOrder}, "passing"))
+		return processServerResp(sender.Send(ctx, []proto.PlayerOrder{kickOrder}, "passing"))
 	}
-	return processServerResp(sender.Send(ctx, []lugo.PlayerOrder{moveForwardOrder}, fmt.Sprintf("just keep swimming: %v", b.side.String())))
+	return processServerResp(sender.Send(ctx, []proto.PlayerOrder{moveForwardOrder}, fmt.Sprintf("just keep swimming: %v", b.side.String())))
 }
 
-func findEscapeRoute(botPosition lugo.Point, opponentTeam []*lugo.Player) *lugo.Vector {
-	var mainVector *lugo.Vector
+func findEscapeRoute(botPosition proto.Point, opponentTeam []*proto.Player) *proto.Vector {
+	var mainVector *proto.Vector
 	for _, opponent := range opponentTeam {
 		if botPosition.DistanceTo(*opponent.Position) < field.PlayerSize*5 {
-			vectorTowardTheOpponent, err := lugo.NewVector(botPosition, *opponent.Position)
+			vectorTowardTheOpponent, err := proto.NewVector(botPosition, *opponent.Position)
 			if err == nil {
 				if mainVector == nil {
 					mainVector = vectorTowardTheOpponent
@@ -99,7 +99,7 @@ func findEscapeRoute(botPosition lugo.Point, opponentTeam []*lugo.Player) *lugo.
 	return mainVector.Invert()
 }
 
-func ShouldShoot(ballPosition, goalKeeperPosition *lugo.Point, goal field.Goal, opponentTeam []*lugo.Player) (FuzzyScale, *lugo.Point) {
+func ShouldShoot(ballPosition, goalKeeperPosition *proto.Point, goal field.Goal, opponentTeam []*proto.Player) (FuzzyScale, *proto.Point) {
 	distanceToShoot := DistanceForShooting(ballPosition, goal)
 	if distanceToShoot >= DistanceFar {
 		return MustNot, nil
@@ -129,7 +129,7 @@ func ShouldShoot(ballPosition, goalKeeperPosition *lugo.Point, goal field.Goal, 
 }
 
 // DistanceForShooting gets the distance from the ball to the goal center or one of the goal's poles. Whatever is closer
-func DistanceForShooting(ballPosition *lugo.Point, goal field.Goal) float64 {
+func DistanceForShooting(ballPosition *proto.Point, goal field.Goal) float64 {
 	ref := goal.Center
 	if ballPosition.Y < field.GoalMinY {
 		ref = goal.BottomPole
@@ -141,24 +141,24 @@ func DistanceForShooting(ballPosition *lugo.Point, goal field.Goal) float64 {
 
 // FindBestPointShootTheBall find a good target in the opponent goal to shoot the ball at.
 // @todo needs enhancement: the method is only choosing a side of the goal, but could consider the player position
-func FindBestPointShootTheBall(opponentGoalKeeperPosition *lugo.Point, opponentGoal field.Goal) (target lugo.Point) {
+func FindBestPointShootTheBall(opponentGoalKeeperPosition *proto.Point, opponentGoal field.Goal) (target proto.Point) {
 	if opponentGoalKeeperPosition.Y > opponentGoal.Center.Y {
-		return lugo.Point{
+		return proto.Point{
 			X: opponentGoal.BottomPole.X,
 			Y: opponentGoal.BottomPole.Y + (field.BallSize / 2),
 		}
 	} else {
-		return lugo.Point{
+		return proto.Point{
 			X: opponentGoal.TopPole.X,
 			Y: opponentGoal.TopPole.Y - (field.BallSize / 2),
 		}
 	}
 }
 
-func shouldIPass(me *lugo.Player, ballPosition, opponentGoalkeeperPosition *lugo.Point, goal field.Goal, myTeam, opponentTeam []*lugo.Player) (FuzzyScale, *lugo.Player) {
+func shouldIPass(me *proto.Player, ballPosition, opponentGoalkeeperPosition *proto.Point, goal field.Goal, myTeam, opponentTeam []*proto.Player) (FuzzyScale, *proto.Player) {
 	passingDecision := MustNot
 	bestCandidateScore := 0
-	var bestCandidate *lugo.Player
+	var bestCandidate *proto.Player
 	for _, teammate := range myTeam {
 		if teammate.Number == me.Number {
 			continue
@@ -203,7 +203,7 @@ func shouldIPass(me *lugo.Player, ballPosition, opponentGoalkeeperPosition *lugo
 	return passingDecision, bestCandidate
 }
 
-func shouldIHoldTheBall(me *lugo.Player, goal field.Goal, opponentTeam []*lugo.Player) FuzzyScale {
+func shouldIHoldTheBall(me *proto.Player, goal field.Goal, opponentTeam []*proto.Player) FuzzyScale {
 	closestOpponentDistance := float64(field.FieldWidth)
 	for _, opponent := range opponentTeam {
 		distToMe := opponent.Position.DistanceTo(*me.Position)

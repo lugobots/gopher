@@ -4,23 +4,23 @@ import (
 	"context"
 	"github.com/lugobots/arena/units"
 	"github.com/lugobots/lugo4go/v2"
-	"github.com/lugobots/lugo4go/v2/lugo"
 	"github.com/lugobots/lugo4go/v2/pkg/field"
+	proto "github.com/lugobots/lugo4go/v2/proto"
 	"github.com/pkg/errors"
 	"math"
 )
 
-func processServerResp(resp *lugo.OrderResponse, err error) error {
+func processServerResp(resp *proto.OrderResponse, err error) error {
 	if err != nil {
 		return errors.Wrapf(err, "error sending orders")
 	}
-	if resp.Code != lugo.OrderResponse_SUCCESS {
+	if resp.Code != proto.OrderResponse_SUCCESS {
 		return errors.Errorf("server responded a non-success code: %s", resp.Code.String())
 	}
 	return nil
 }
 
-func (b *Bot) OnDisputing(ctx context.Context, sender lugo4go.TurnOrdersSender, snapshot *lugo.GameSnapshot) error {
+func (b *Bot) OnDisputing(ctx context.Context, sender lugo4go.TurnOrdersSender, snapshot *proto.GameSnapshot) error {
 	shouldNotCatch := snapshot.Turn-b.lastKickTurn <= afterKickingWaitingTime
 	me := field.GetPlayer(snapshot, b.side, b.number)
 
@@ -30,12 +30,12 @@ func (b *Bot) OnDisputing(ctx context.Context, sender lugo4go.TurnOrdersSender, 
 		if err != nil {
 			return errors.Wrap(err, "error creating move order")
 		}
-		return processServerResp(sender.Send(ctx, []lugo.PlayerOrder{moveOrder, field.MakeOrderCatch()}, "disputing for the ball"))
+		return processServerResp(sender.Send(ctx, []proto.PlayerOrder{moveOrder, field.MakeOrderCatch()}, "disputing for the ball"))
 	}
 	return b.holdPosition(ctx, sender, snapshot)
 }
 
-func ShouldIDisputeForTheBall(mapper field.Mapper, botNumber uint32, botPosition, ballPosition *lugo.Point, teamMates []*lugo.Player) bool {
+func ShouldIDisputeForTheBall(mapper field.Mapper, botNumber uint32, botPosition, ballPosition *proto.Point, teamMates []*proto.Player) bool {
 
 	//ballRegion, _ := mapper.GetPointRegion(ballPosition)
 	//botRegion, _ := mapper.GetPointRegion(botPosition)
@@ -55,12 +55,12 @@ func ShouldIDisputeForTheBall(mapper field.Mapper, botNumber uint32, botPosition
 	return true
 }
 
-func FindBestPointInterceptBall(ball *lugo.Ball, player *lugo.Player) (speed float64, target *lugo.Point) {
+func FindBestPointInterceptBall(ball *proto.Ball, player *proto.Player) (speed float64, target *proto.Point) {
 	if ball.Velocity.Speed == 0 {
 		return field.PlayerMaxSpeed, ball.Position
 	} else {
 		// @todo needs enhancement: there are math formulas to find the sweet spot
-		calcBallPos := func(frame int) *lugo.Point {
+		calcBallPos := func(frame int) *proto.Point {
 			//S = So + VT + (aT^2)/2
 			V := ball.Velocity.Speed
 			T := float64(frame)

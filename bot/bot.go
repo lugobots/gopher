@@ -3,8 +3,8 @@ package bot
 import (
 	"context"
 	"github.com/lugobots/lugo4go/v2"
-	"github.com/lugobots/lugo4go/v2/lugo"
 	"github.com/lugobots/lugo4go/v2/pkg/field"
+	proto "github.com/lugobots/lugo4go/v2/proto"
 	"github.com/pkg/errors"
 )
 
@@ -12,7 +12,7 @@ type Bot struct {
 	mapper        field.Mapper
 	Role          Role
 	number        uint32
-	side          lugo.Team_Side
+	side          proto.Team_Side
 	actionRegions PlayerActionRegions
 	log           lugo4go.Logger
 
@@ -21,7 +21,7 @@ type Bot struct {
 
 const afterKickingWaitingTime = uint32(8)
 
-func NewBot(logger lugo4go.Logger, side lugo.Team_Side, number uint32) *Bot {
+func NewBot(logger lugo4go.Logger, side proto.Team_Side, number uint32) *Bot {
 	fieldMapper, _ := field.NewMapper(FieldGridCols, FieldGridRows, side)
 
 	me := Bot{
@@ -37,7 +37,7 @@ func NewBot(logger lugo4go.Logger, side lugo.Team_Side, number uint32) *Bot {
 	return &me
 }
 
-func (b *Bot) MyInitialPosition() *lugo.Point {
+func (b *Bot) MyInitialPosition() *proto.Point {
 	iniRegion := b.actionRegions[Initial]
 	// we may ignore this error because if it is not a valid region we will notice during the development
 	region, _ := b.mapper.GetRegion(iniRegion.Col, iniRegion.Row)
@@ -49,7 +49,7 @@ func (b *Bot) myActionRegion(teamState TeamState) field.Region {
 	return r
 }
 
-func (b *Bot) holdPosition(ctx context.Context, sender lugo4go.TurnOrdersSender, snapshot *lugo.GameSnapshot) error {
+func (b *Bot) holdPosition(ctx context.Context, sender lugo4go.TurnOrdersSender, snapshot *proto.GameSnapshot) error {
 	me := field.GetPlayer(snapshot, b.side, b.number)
 	teamState := Neutral
 
@@ -85,5 +85,5 @@ func (b *Bot) holdPosition(ctx context.Context, sender lugo4go.TurnOrdersSender,
 
 		return errors.Wrap(err, "error creating move order to return to action region")
 	}
-	return processServerResp(sender.Send(ctx, []lugo.PlayerOrder{moveOrder, field.MakeOrderCatch()}, msg))
+	return processServerResp(sender.Send(ctx, []proto.PlayerOrder{moveOrder, field.MakeOrderCatch()}, msg))
 }
