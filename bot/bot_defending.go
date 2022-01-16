@@ -18,8 +18,9 @@ func (b *Bot) OnDefending(ctx context.Context, sender lugo4go.TurnOrdersSender, 
 		}
 		return processServerResp(sender.Send(ctx, []lugo.PlayerOrder{moveOrder, field.MakeOrderCatch()}, "trying to take the ball"))
 	}
-
-	if b.Role == Defense {
+	ballRegion, _ := b.mapper.GetPointRegion(snapshot.Ball.Position)
+	teamState, _ := DetermineTeamState(ballRegion, b.side, snapshot.GetShotClock().GetTeamSide())
+	if b.Role == Defense && teamState == UnderPressure {
 		myGOal := field.GetTeamsGoal(b.side)
 		opponentTrajectoryToGoal, _ := lugo.NewVector(*snapshot.Ball.Holder.Position, myGOal.Center)
 		myTrajectoryToGoal, _ := lugo.NewVector(*me.Position, myGOal.Center)
