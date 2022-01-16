@@ -2,6 +2,8 @@ package bot
 
 import (
 	"github.com/lugobots/lugo4go/v2/pkg/field"
+	"math/rand"
+	"time"
 )
 
 // IMPORTANT: all this constant sets below may be changed (see each set instructions). However, any change will
@@ -10,6 +12,10 @@ import (
 type TeamState string
 
 type Role string
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 // You however, may increase or decrease their values to change the precision of the Positioner.
 // These values define how the field will be divided by the Positioner to create a field map.

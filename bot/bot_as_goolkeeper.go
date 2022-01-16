@@ -6,13 +6,27 @@ import (
 	"github.com/lugobots/lugo4go/v2/lugo"
 	"github.com/lugobots/lugo4go/v2/pkg/field"
 	"github.com/pkg/errors"
-	"log"
 	"math"
+	"math/rand"
 )
 
-func (b *Bot) AsGoalkeeper(ctx context.Context, sender lugo4go.TurnOrdersSender, snapshot *lugo.GameSnapshot, _ lugo4go.PlayerState) error {
+func (b *Bot) AsGoalkeeper(ctx context.Context, sender lugo4go.TurnOrdersSender, snapshot *lugo.GameSnapshot, myState lugo4go.PlayerState) error {
 	me := field.GetPlayer(snapshot, b.side, b.number)
 	myGoal := field.GetTeamsGoal(b.side)
+
+	if myState == lugo4go.HoldingTheBall {
+		kickTarget := getTargetToRestartBall(b.side, snapshot)
+		if kickTarget == nil {
+			return processServerResp(sender.Send(ctx, []lugo.PlayerOrder{}, "waiting players get closer"))
+		}
+
+		kickOrder, err := field.MakeOrderKickMaxSpeed(*snapshot.Ball, *kickTarget)
+		if err != nil {
+			return errors.Wrap(err, "error creating kicking order to pass from goalkeeper")
+		}
+		b.lastKickTurn = snapshot.Turn
+		return processServerResp(sender.Send(ctx, []lugo.PlayerOrder{kickOrder}, "restarting ball"))
+	}
 
 	stopOrder, err := field.MakeOrderMove(*me.Position, field.FieldCenter(), 0)
 	if err != nil {
@@ -20,7 +34,6 @@ func (b *Bot) AsGoalkeeper(ctx context.Context, sender lugo4go.TurnOrdersSender,
 	}
 
 	if snapshot.Ball.Position.DistanceTo(*me.Position) > DistanceFar {
-		log.Printf("just chilling")
 		return processServerResp(sender.Send(ctx, []lugo.PlayerOrder{stopOrder, field.MakeOrderCatch()}, "just chilling"))
 	}
 	//1st - Based on the ball's speed in X axis, let find how long the ball would take to reach the coord X of the goal
@@ -30,14 +43,12 @@ func (b *Bot) AsGoalkeeper(ctx context.Context, sender lugo4go.TurnOrdersSender,
 	if !coming {
 		optimumPoint := optimumWatchingPosition(myGoal, ballTarget, timeToReach)
 		if optimumPoint.DistanceTo(*me.Position) < field.PlayerSize {
-			log.Printf("I am read - %v", &ballTarget)
 			return processServerResp(sender.Send(ctx, []lugo.PlayerOrder{stopOrder, field.MakeOrderCatch()}, "I am ready"))
 		}
 		moveOrder, err := field.MakeOrderMoveMaxSpeed(*me.Position, optimumPoint)
 		if err != nil {
 			return errors.Wrap(err, "error creating move order to move goalkeeper")
 		}
-		log.Printf("moving to a better positio - %v", &ballTarget)
 		return processServerResp(sender.Send(ctx, []lugo.PlayerOrder{moveOrder, field.MakeOrderCatch()}, "moving to a better position"))
 	}
 
@@ -45,7 +56,6 @@ func (b *Bot) AsGoalkeeper(ctx context.Context, sender lugo4go.TurnOrdersSender,
 
 	if distanceFromTarget < field.BallSize/2 {
 		//the goalkeeper can already catch the ball!
-		log.Printf("waiting to catch the bal - %v", &ballTarget)
 		return processServerResp(sender.Send(ctx, []lugo.PlayerOrder{stopOrder, field.MakeOrderCatch()}, "waiting to catch the ball"))
 	}
 
@@ -57,7 +67,6 @@ func (b *Bot) AsGoalkeeper(ctx context.Context, sender lugo4go.TurnOrdersSender,
 		if err != nil {
 			return errors.Wrap(err, "error creating jumping order for the goalkeeper")
 		}
-		log.Printf("jumping to the succes - %v", &ballTarget)
 		return processServerResp(sender.Send(ctx, []lugo.PlayerOrder{jumpOrder, field.MakeOrderCatch()}, "jumping to the success"))
 	}
 
@@ -71,8 +80,43 @@ func (b *Bot) AsGoalkeeper(ctx context.Context, sender lugo4go.TurnOrdersSender,
 		return errors.Wrap(err, "error creating move order to move the goalkeeper to the catching point")
 	}
 
-	log.Printf("catching the ball - %v", &ballTarget)
 	return processServerResp(sender.Send(ctx, []lugo.PlayerOrder{moveOrder, field.MakeOrderCatch()}, "catching the ball!"))
+}
+
+// getTargetToRestartBall may return a nil point, which means there is no good target at this moment and the goalkeeper
+// may wait.
+func getTargetToRestartBall(mySide lugo.Team_Side, snapshot *lugo.GameSnapshot) *lugo.Point {
+	me := field.GetPlayer(snapshot, mySide, field.GoalkeeperNumber)
+	myTeam := field.GetTeam(snapshot, mySide).GetPlayers()
+	opponentGoal := field.GetOpponentGoal(mySide)
+	opponentSide := field.GetOpponentSide(mySide)
+	opponentGoalKeeper := field.GetPlayer(snapshot, opponentSide, field.GoalkeeperNumber)
+	opponentTeam := field.GetTeam(snapshot, opponentSide).GetPlayers()
+
+	shouldIPass, bestCandidate := shouldIPass(me, snapshot.Ball.Position, opponentGoalKeeper.Position, opponentGoal, myTeam, opponentTeam)
+
+	var target lugo.Point
+	if shouldIPass < May {
+		// if the goalkeeper cannot pass the ball yet, lest check if he can wait
+		// if we still have at least N turns to hold it, let's hold it
+		if snapshot.TurnsBallInGoalZone < field.BallTimeInGoalZone-3 {
+			return nil
+		}
+
+		// we cannot wait, so let's kick randomly
+		// @todo needs enhancement: we could find the place where there is no opponent player
+		angleInDegrees := rand.Intn(90)
+		if rand.Intn(2) == 0 {
+			angleInDegrees *= -1
+		}
+		target := field.FieldCenter()
+		randomDirection, _ := lugo.NewVector(*me.Position, target)
+		randomDirection.AddAngleDegree(float64(angleInDegrees))
+		target = randomDirection.TargetFrom(*me.Position)
+	} else {
+		target = *bestCandidate.Position
+	}
+	return &target
 }
 
 func findThreatenedSpot(ball lugo.Ball, myGoal field.Goal) (target lugo.Point, framesToReach int, coming bool) {

@@ -9,7 +9,7 @@ import (
 )
 
 const numberOfAssistsPlayers = 3
-const assistPlayerDistance = field.FieldWidth / 8
+const assistPlayerDistance = DistanceBeside
 
 func (b *Bot) OnSupporting(ctx context.Context, sender lugo4go.TurnOrdersSender, snapshot *lugo.GameSnapshot) error {
 	me := field.GetPlayer(snapshot, b.side, b.number)

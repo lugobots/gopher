@@ -155,7 +155,7 @@ func FindBestPointShootTheBall(opponentGoalKeeperPosition *lugo.Point, opponentG
 	}
 }
 
-func shouldIPass(me *lugo.Player, ballPosition, goalKeeperPosition *lugo.Point, goal field.Goal, myTeam, opponentTeam []*lugo.Player) (FuzzyScale, *lugo.Player) {
+func shouldIPass(me *lugo.Player, ballPosition, opponentGoalkeeperPosition *lugo.Point, goal field.Goal, myTeam, opponentTeam []*lugo.Player) (FuzzyScale, *lugo.Player) {
 	passingDecision := MustNot
 	bestCandidateScore := 0
 	var bestCandidate *lugo.Player
@@ -163,14 +163,15 @@ func shouldIPass(me *lugo.Player, ballPosition, goalKeeperPosition *lugo.Point, 
 		if teammate.Number == me.Number {
 			continue
 		}
-		distanceFromMe := me.Position.DistanceTo(*teammate.Position)
+
 		obstaclesToPlayer, err := findOpponentsOnMyRoute(me.Position, teammate.Position, field.BallSize, opponentTeam)
 		if err != nil || len(obstaclesToPlayer) > 0 {
 			continue
 		}
 
+		distanceFromMe := me.Position.DistanceTo(*teammate.Position)
 		teammateScore := 1
-		shouldShoot, _ := ShouldShoot(ballPosition, goalKeeperPosition, goal, myTeam)
+		shouldShoot, _ := ShouldShoot(ballPosition, opponentGoalkeeperPosition, goal, myTeam)
 		switch shouldShoot {
 		case May:
 			teammateScore = 3
@@ -211,15 +212,15 @@ func shouldIHoldTheBall(me *lugo.Player, goal field.Goal, opponentTeam []*lugo.P
 		}
 	}
 
-	if closestOpponentDistance < field.PlayerSize*5 {
+	if closestOpponentDistance < field.PlayerSize*6 {
 		return ShouldNot
 	}
 
-	if closestOpponentDistance < field.PlayerSize*2 {
+	if closestOpponentDistance < field.PlayerSize*3 {
 		return MustNot
 	}
 
-	obstaclesToPlayer, err := findOpponentsOnMyRoute(me.Position, &goal.Center, field.PlayerSize*2, opponentTeam)
+	obstaclesToPlayer, err := findOpponentsOnMyRoute(me.Position, &goal.Center, field.PlayerSize*3, opponentTeam)
 	if err != nil {
 		return ShouldNot
 	}
