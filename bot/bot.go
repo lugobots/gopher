@@ -49,11 +49,6 @@ func (b *Bot) myActionRegion(teamState TeamState) field.Region {
 	return r
 }
 
-func (b *Bot) AsGoalkeeper(ctx context.Context, sender lugo4go.TurnOrdersSender, snapshot *lugo.GameSnapshot, state lugo4go.PlayerState) error {
-	// nothing
-	return nil
-}
-
 func (b *Bot) holdPosition(ctx context.Context, sender lugo4go.TurnOrdersSender, snapshot *lugo.GameSnapshot) error {
 	me := field.GetPlayer(snapshot, b.side, b.number)
 	teamState := Neutral

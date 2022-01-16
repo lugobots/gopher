@@ -6,7 +6,6 @@ import (
 	"github.com/lugobots/lugo4go/v2/lugo"
 	"github.com/lugobots/lugo4go/v2/pkg/field"
 	"github.com/pkg/errors"
-	"log"
 )
 
 const numberOfAssistsPlayers = 3
@@ -27,7 +26,6 @@ func (b *Bot) OnSupporting(ctx context.Context, sender lugo4go.TurnOrdersSender,
 			speed = 0
 			msg = "I am here"
 		}
-		log.Printf("N MY WAY- from %v to %v @%f", me.Position, bestSpot, speed)
 		moveOrder, err := field.MakeOrderMove(*me.Position, *bestSpot, speed)
 		if err != nil {
 			return errors.Wrap(err, "error creating moving order to assist")

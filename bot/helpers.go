@@ -3,6 +3,7 @@ package bot
 import (
 	"github.com/lugobots/lugo4go/v2/lugo"
 	"github.com/lugobots/lugo4go/v2/pkg/field"
+	"github.com/pkg/errors"
 	"math"
 	"sort"
 )
@@ -54,4 +55,17 @@ func findOpponentsOnMyRoute(origin, target *lugo.Point, margin float64, opponent
 	})
 
 	return obstacles, nil
+}
+
+// QuadraticResults resolves a quadratic function returning the x1 and x2
+func QuadraticResults(a, b, c float64) (float64, float64, error) {
+	if a == 0 {
+		return 0, 0, errors.New("a cannot be zero")
+	}
+	// delta: B^2 -4.A.C
+	delta := math.Pow(b, 2) - 4*a*c
+	// quadratic formula: -b +/- sqrt(delta)/2a
+	t1 := (-b + math.Sqrt(delta)) / (2 * a)
+	t2 := (-b - math.Sqrt(delta)) / (2 * a)
+	return t1, t2, nil
 }
