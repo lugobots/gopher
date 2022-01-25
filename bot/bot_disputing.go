@@ -2,7 +2,6 @@ package bot
 
 import (
 	"context"
-	"github.com/lugobots/arena/units"
 	"github.com/lugobots/lugo4go/v2"
 	"github.com/lugobots/lugo4go/v2/pkg/field"
 	proto "github.com/lugobots/lugo4go/v2/proto"
@@ -64,7 +63,7 @@ func FindBestPointInterceptBall(ball *proto.Ball, player *proto.Player) (speed f
 			//S = So + VT + (aT^2)/2
 			V := ball.Velocity.Speed
 			T := float64(frame)
-			a := -units.BallDeceleration
+			a := -field.BallDeceleration
 			distance := V*T + (a*math.Pow(T, 2))/2
 			if distance <= 0 {
 				return nil
@@ -80,11 +79,11 @@ func FindBestPointInterceptBall(ball *proto.Ball, player *proto.Player) (speed f
 			if ballLocation == nil {
 				break
 			}
-			minDistanceToTouch := ballLocation.DistanceTo(*player.Position) - ((units.BallSize + units.PlayerSize) / 2)
+			minDistanceToTouch := ballLocation.DistanceTo(*player.Position) - ((field.BallSize + field.PlayerSize) / 2)
 
-			if minDistanceToTouch <= float64(units.PlayerMaxSpeed*frames) {
+			if minDistanceToTouch <= float64(field.PlayerMaxSpeed*frames) {
 				if frames > 1 {
-					return units.PlayerMaxSpeed, ballLocation
+					return field.PlayerMaxSpeed, ballLocation
 				} else {
 					return player.Position.DistanceTo(*ballLocation), ballLocation
 				}
@@ -92,6 +91,6 @@ func FindBestPointInterceptBall(ball *proto.Ball, player *proto.Player) (speed f
 			lastBallPosition = ballLocation
 			frames++
 		}
-		return units.PlayerMaxSpeed, lastBallPosition
+		return field.PlayerMaxSpeed, lastBallPosition
 	}
 }

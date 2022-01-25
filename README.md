@@ -12,7 +12,7 @@ As this name suggest, _The Dummies_ are not that smart, but they may play well e
 
 0. Docker >= 18.03 (https://docs.docker.com/install/)
 0. Docker Compose >= 1.21 (https://docs.docker.com/compose/install/)
-0. Go Lang >= 1.12 (https://golang.org/doc/install)
+0. Go Lang >= 1.16 (https://golang.org/doc/install)
 
 ### Usage 
 
@@ -25,7 +25,7 @@ the server along with 11 instances of _The Dummies_ bot.
 
 Start the set of containers:
 ```
-TEAM_IMAGE=lugobots/the-dummies-go TEAM_PLACE=away docker-compose up
+TEAM_IMAGE=lugobots/the-dummies-go:v0.0.0-alpha.1 TEAM_PLACE=away docker-compose up
 ```
 
 That command will start the team as the **away** team (defined by the env variable `TEAM_PLACE`).
@@ -52,15 +52,15 @@ you may start a game using _The Dummies_ as the Home and Away teams.
 0. Download the [Demo Docker compose file](https://raw.githubusercontent.com/lugobots/the-dummies-go/master/docker-compose-demo.yml)
 0. Execute the command bellow:
     ```bash
-    HOME_TEAM=lugobots/the-dummies-go \
-    AWAY_TEAM=lugobots/the-dummies-go \
+HOME_TEAM=lugobots/the-dummies-go:v0.0.0-alpha \
+AWAY_TEAM=lugobots/the-dummies-go:v0.0.0-alpha \
     docker-compose -f docker-compose-demo.yml up
     ```
 0. Watch the game in the browser at the address `http://localhost:8080`
 
 **Important**: You probably want to remove that bunch of containers from your environment later. So, execute the command below:
 ```bash
-HOME_TEAM=lugobots/the-dummies-go \
-AWAY_TEAM=lugobots/the-dummies-go \
+HOME_TEAM=lugobots/the-dummies-go:v0.0.0-alpha \
+AWAY_TEAM=lugobots/the-dummies-go:v0.0.0-alpha \
 docker-compose -f docker-compose-demo.yml down
 ```

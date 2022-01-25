@@ -18,6 +18,8 @@ func main() {
 
 	playerConfig.InitialPosition = dummy.MyInitialPosition()
 
+	log.Printf("%s-%s: %v", playerConfig.TeamSide, playerConfig.Number, dummy.MyInitialPosition())
+
 	player, err := clientGo.NewClient(playerConfig)
 	if err != nil {
 		log.Fatalf("could not init the client: %s", err)

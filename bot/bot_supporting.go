@@ -19,7 +19,7 @@ func (b *Bot) OnSupporting(ctx context.Context, sender lugo4go.TurnOrdersSender,
 
 	shouldIAssist, _ := ShouldIAssist(me.Position, snapshot.Ball.Position, b.number, snapshot.Ball.Holder.Number, myTeam)
 	if shouldIAssist {
-		bestSpot := FindSpotsToAssist(snapshot.Ball.Holder.Position, me.Position, b.side, myTeam, opponentTeam)
+		bestSpot := FindSpotsToAssist(snapshot.Ball.Holder.Position, me.Position, b.mapper, opponentTeam)
 		speed := field.PlayerMaxSpeed
 		msg := "on my way"
 		if me.Position.DistanceTo(*bestSpot) < field.PlayerSize {
@@ -55,24 +55,12 @@ func ShouldIAssist(myPosition, ballPosition *proto.Point, myNumber, holderNumber
 	return true, assistingPlayers
 }
 
-func FindSpotsToAssist(ballHolderPosition, botPosition *proto.Point, teamSide proto.Team_Side, assistPlayer, opponentTeam []*proto.Player) *proto.Point {
-	backPositionY := ballHolderPosition.Y - assistPlayerDistance
-	if teamSide == proto.Team_AWAY {
-		backPositionY = ballHolderPosition.Y + assistPlayerDistance
-	}
+func FindSpotsToAssist(ballHolderPosition, botPosition *proto.Point, mapper field.Mapper, opponentTeam []*proto.Player) *proto.Point {
+	holderRegion, _ := mapper.GetPointRegion(ballHolderPosition)
 
-	perfectPositionBack := &proto.Point{
-		X: ballHolderPosition.X,
-		Y: backPositionY,
-	}
-	perfectPositionLateralA := &proto.Point{
-		X: ballHolderPosition.X,
-		Y: ballHolderPosition.Y - assistPlayerDistance,
-	}
-	perfectPositionLateralB := &proto.Point{
-		X: ballHolderPosition.X,
-		Y: ballHolderPosition.Y + assistPlayerDistance,
-	}
+	perfectPositionBack := holderRegion.Back().Center()
+	perfectPositionLateralA := holderRegion.Left().Front().Center()
+	perfectPositionLateralB := holderRegion.Right().Front().Center()
 
 	positions := []*proto.Point{perfectPositionBack, perfectPositionLateralA, perfectPositionLateralB}
 	for i, originalPos := range positions {
@@ -92,6 +80,7 @@ func FindSpotsToAssist(ballHolderPosition, botPosition *proto.Point, teamSide pr
 		}
 	}
 
+	// @todo needs enhancement should check if another player is closer to that point
 	// @todo needs enhancement: the closest spot is not always the most efficient because we must consider the other players
 	closestDistance := float64(field.FieldWidth)
 	var closestPosition proto.Point
