@@ -14,5 +14,5 @@ fi
 HOST_IP=`hostname -I | awk '{print $1}'`
 for i in `seq 1 11`
 do
-    docker run -t $1 -team=$2 -number=$i -wshost=$HOST_IP &
+    docker run -t $1 -team=$2 -number=$i -grpc_address=$HOST_IP:5000 &
 done
