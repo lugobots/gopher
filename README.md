@@ -44,7 +44,7 @@ docker run --net=host lugobots/the-dummies-go:v1.0.0-beta -team=[home away] -num
 
 #### Option B - Running in containers after cloning the repo (requires Docker Compose)
 
-If you clonned the repo and you are changing the code to build your bot, you can still use the local files to run the original _The Dummies_.
+If you cloned the repo, and you are changing the code to build your bot, you can still use the local files to run the original _The Dummies_.
 
 
 ```
@@ -53,7 +53,7 @@ SERVER_VERSION=v1.0.0-beta \
 docker-compose up
 ```
 
-That command will run _The _Dummies_ as the **away** team (defined by the env variable `AWAY_TEAM`).
+That command will run _The Dummies_ as the **away** team (defined by the env variable `AWAY_TEAM`).
 Now you may start **your** bot to play against _The Dummies_.
 
 #### Option C - Running the processes directly on your machine (recommended for developing environment because the startup is a faster)
