@@ -18,15 +18,15 @@ func main() {
 
 	playerConfig.InitialPosition = dummy.MyInitialPosition()
 
-	log.Printf("%s-%s: %v", playerConfig.TeamSide, playerConfig.Number, dummy.MyInitialPosition())
+	log.Printf("%s-%d: %v", playerConfig.TeamSide, playerConfig.Number, dummy.MyInitialPosition())
 
 	player, err := clientGo.NewClient(playerConfig)
 	if err != nil {
-		log.Fatalf("could not init the client: %s", err)
+		log.Fatalf("could not init the gRPC client (server at %s): %s", playerConfig.GRPCAddress, err)
 	}
 	logger.Info("connected to the game server")
 
-	if err := player.PlayWithBot(dummy, logger.Named("bot")); err != nil {
+	if err := player.PlayAsBot(dummy, logger.Named("bot")); err != nil {
 		logger.With("error", err).Warnf("got interruption signal")
 	}
 
