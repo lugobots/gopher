@@ -1,70 +1,34 @@
 package main
 
 import (
-	"math/rand"
-	"time"
-
-	"github.com/lugobots/arena"
-	"github.com/lugobots/client-player-go"
-	"github.com/lugobots/the-dummies-go/dummy"
-	"github.com/lugobots/the-dummies-go/strategy"
-	"github.com/sirupsen/logrus"
+	clientGo "github.com/lugobots/lugo4go/v2"
+	"github.com/lugobots/lugo4go/v2/pkg/util"
+	"github.com/lugobots/the-dummies-go/v2/bot"
 	"log"
-	"os"
-	"os/signal"
 )
 
 func main() {
-	rand.Seed(time.Now().Unix())
-	serverConfig := new(client.Configuration)
-	serverConfig.ParseFromFlags()
-	serverConfig.LogLevel = logrus.DebugLevel
-
-	gamer := &client.Gamer{}
-
-	dummy.PlayerNumber = serverConfig.PlayerNumber
-	dummy.TeamPlace = serverConfig.TeamPlace
-	dummy.MyRule = strategy.DefinePlayerRule(serverConfig.PlayerNumber)
-	dummy.TeamBallPossession = dummy.TeamPlace
-	dummy.ClientResponder = gamer
-
-	gamer.OnAnnouncement = reactToNewState
-
-	gamerCtx, err := gamer.Play(dummy.GetInitialRegion().Center(serverConfig.TeamPlace), serverConfig)
+	// DefaultInitBundle is a shortcut for stuff that usually we define in init functions
+	playerConfig, logger, err := util.DefaultInitBundle()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("could not init default config or logger: %s", err)
 	}
 
-	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, os.Interrupt)
-	select {
-	case <-signalChan:
-		logrus.Print("*********** INTERRUPTION SIGNAL ****************")
-		gamer.StopToPlay(true)
-	case <-gamerCtx.Done():
-		logrus.Print("*********** Game stopped ****************")
+	dummy := bot.NewBot(logger, playerConfig.TeamSide, playerConfig.Number)
+
+	playerConfig.InitialPosition = dummy.MyInitialPosition()
+
+	log.Printf("%s-%d: %v", playerConfig.TeamSide, playerConfig.Number, dummy.MyInitialPosition())
+
+	player, err := clientGo.NewClient(playerConfig)
+	if err != nil {
+		log.Fatalf("could not init the gRPC client (server at %s): %s", playerConfig.GRPCAddress, err)
+	}
+	logger.Info("connected to the game server")
+
+	if err := player.PlayAsBot(dummy, logger.Named("bot")); err != nil {
+		logger.With("error", err).Warnf("got interruption signal")
 	}
 
-}
-
-func reactToNewState(ctx client.TurnContext) {
-
-	switch ctx.GameMsg().GameInfo.State {
-	case arena.Listening:
-		if ctx.GameMsg().Ball().Holder != nil {
-			dummy.TeamBallPossession = ctx.GameMsg().Ball().Holder.TeamPlace
-		}
-
-		player := &dummy.Dummy{
-			GameMsg:     ctx.GameMsg(),
-			Player:      ctx.Player(),
-			PlayerState: strategy.DetermineMyState(ctx),
-			TeamState:   strategy.DetermineMyTeamState(ctx, dummy.TeamBallPossession),
-			Logger:      ctx.Logger(),
-		}
-
-		ctx.Logger().Infof("my state: %s", player.PlayerState)
-		player.React()
-		dummy.LastHolderFrom = ctx.GameMsg().Ball().Holder
-	}
+	logger.Infof("process finished")
 }

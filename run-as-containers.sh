@@ -6,9 +6,11 @@ if [ -z "$1" ]
     exit 1
 fi
 
-go build -o the-dummies main.go || { echo "building has failed"; exit 1; }
+docker build -t my-bots .  || { echo "building has failed"; exit 1; }
 for i in `seq 1 11`
 do
-  ./the-dummies -team=$1 -number=$i &
+  docker run --net=host my-bots -team=$1 -number=$i &
   sleep 0.1
 done
+
+echo ""

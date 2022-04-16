@@ -1,0 +1,76 @@
+package bot
+
+import (
+	"context"
+	"github.com/lugobots/lugo4go/v2"
+	"github.com/lugobots/lugo4go/v2/pkg/field"
+	"github.com/lugobots/lugo4go/v2/proto"
+	"github.com/pkg/errors"
+)
+
+type Bot struct {
+	mapper        field.Mapper
+	Role          Role
+	number        uint32
+	side          proto.Team_Side
+	actionRegions PlayerActionRegions
+	log           lugo4go.Logger
+
+	lastKickTurn uint32
+}
+
+const afterKickingWaitingTime = uint32(8)
+
+func NewBot(logger lugo4go.Logger, side proto.Team_Side, number uint32) *Bot {
+	fieldMapper, _ := field.NewMapper(FieldGridCols, FieldGridRows, side)
+
+	me := Bot{
+		mapper: fieldMapper,
+		Role:   DefineRole(number),
+		number: number,
+		side:   side,
+		log:    logger,
+	}
+	if number != field.GoalkeeperNumber {
+		me.actionRegions = DefinePlayerActionRegions(number)
+	}
+	return &me
+}
+
+func (b *Bot) MyInitialPosition() *proto.Point {
+	iniRegion := b.actionRegions[Initial]
+	// we may ignore this error because if it is not a valid region we will notice during the development
+	region, _ := b.mapper.GetRegion(iniRegion.Col, iniRegion.Row)
+	return region.Center()
+}
+
+func (b *Bot) myActionRegion(teamState TeamState) field.Region {
+	r, _ := b.mapper.GetRegion(b.actionRegions[teamState].Col, b.actionRegions[teamState].Row)
+	return r
+}
+
+func (b *Bot) holdPosition(ctx context.Context, sender lugo4go.TurnOrdersSender, snapshot *proto.GameSnapshot) error {
+	me := field.GetPlayer(snapshot, b.side, b.number)
+	teamState := Neutral
+
+	ballRegion, _ := b.mapper.GetPointRegion(snapshot.Ball.Position)
+	if snapshot.GetShotClock() != nil {
+		teamState, _ = DetermineTeamState(ballRegion, b.side, snapshot.GetShotClock().GetTeamSide())
+	}
+
+	actionRegion := b.myActionRegion(teamState)
+
+	speed := field.PlayerMaxSpeed
+	msg := "moving to my region"
+	if me.Position.DistanceTo(*actionRegion.Center()) < field.PlayerSize {
+		speed = 0
+		msg = "Holding position"
+	}
+
+	moveOrder, err := field.MakeOrderMove(*me.Position, *actionRegion.Center(), speed)
+	if err != nil {
+
+		return errors.Wrap(err, "error creating move order to return to action region")
+	}
+	return processServerResp(sender.Send(ctx, []proto.PlayerOrder{moveOrder, field.MakeOrderCatch()}, msg))
+}
