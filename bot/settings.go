@@ -6,9 +6,6 @@ import (
 	"time"
 )
 
-// IMPORTANT: all this constant sets below may be changed (see each set instructions). However, any change will
-// affect the tactic defined in tactic.go file. So you must go there and adapt your tactics to your new settings.
-
 type TeamState string
 
 type Role string
@@ -16,6 +13,9 @@ type Role string
 func init() {
 	rand.Seed(time.Now().UnixNano())
 }
+
+// IMPORTANT: all this constant sets below may be changed (see each set instructions). However, any change will
+// affect the tactic defined in tactic.go file. So you must go there and adapt your tactics to your new settings.
 
 // You however, may increase or decrease their values to change the precision of the Positioner.
 // These values define how the field will be divided by the Positioner to create a field map.
@@ -62,23 +62,3 @@ type PlayerActionRegions map[TeamState]RegionCode
 func DefinePlayerActionRegions(number uint32) PlayerActionRegions {
 	return roleMap[number]
 }
-
-//func send(ctx context.Context, turn coach.TurnData, orders []proto.PlayerOrder, debugMsg string) error {
-//	r, err := turn.Sender.Send(ctx, orders, debugMsg)
-//	if err != nil {
-//		return fmt.Errorf("error sending the orders: %s", err)
-//	}
-//	if r.Code != proto.OrderResponse_SUCCESS {
-//		return fmt.Errorf("game server returned an error on our order: %s", err)
-//	}
-//	return nil
-//}
-
-//func GetBallRegion(positioner coach.Positioner, ball proto.Ball, logger lugo4go.Logger) coach.Region  {
-//	reg, err := positioner.GetPointRegion(*ball.Position)
-//	if err != nil {
-//		logger.Errorf("could not find the ball region: %s", err)
-//		return nil
-//	}
-//	return reg
-//}

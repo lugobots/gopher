@@ -3,7 +3,7 @@ package bot
 import (
 	"fmt"
 	"github.com/lugobots/lugo4go/v2/pkg/field"
-	proto "github.com/lugobots/lugo4go/v2/proto"
+	"github.com/lugobots/lugo4go/v2/proto"
 )
 
 const (

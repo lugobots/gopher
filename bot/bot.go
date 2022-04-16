@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/lugobots/lugo4go/v2"
 	"github.com/lugobots/lugo4go/v2/pkg/field"
-	proto "github.com/lugobots/lugo4go/v2/proto"
+	"github.com/lugobots/lugo4go/v2/proto"
 	"github.com/pkg/errors"
 )
 
@@ -52,19 +52,6 @@ func (b *Bot) myActionRegion(teamState TeamState) field.Region {
 func (b *Bot) holdPosition(ctx context.Context, sender lugo4go.TurnOrdersSender, snapshot *proto.GameSnapshot) error {
 	me := field.GetPlayer(snapshot, b.side, b.number)
 	teamState := Neutral
-
-	//interval := (snapshot.Turn / 100) % 5
-	//if interval < 1 {
-	//	teamState = UnderPressure
-	//} else if interval < 2 {
-	//	teamState = Defensive
-	//} else if interval < 3 {
-	//	teamState = Neutral
-	//} else if interval < 4 {
-	//	teamState = Offensive
-	//} else {
-	//	teamState = OnAttack
-	//}
 
 	ballRegion, _ := b.mapper.GetPointRegion(snapshot.Ball.Position)
 	if snapshot.GetShotClock() != nil {

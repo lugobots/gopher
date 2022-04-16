@@ -4,12 +4,11 @@ import (
 	"context"
 	"github.com/lugobots/lugo4go/v2"
 	"github.com/lugobots/lugo4go/v2/pkg/field"
-	proto "github.com/lugobots/lugo4go/v2/proto"
+	"github.com/lugobots/lugo4go/v2/proto"
 	"github.com/pkg/errors"
 )
 
 const numberOfAssistsPlayers = 3
-const assistPlayerDistance = DistanceBeside
 
 func (b *Bot) OnSupporting(ctx context.Context, sender lugo4go.TurnOrdersSender, snapshot *proto.GameSnapshot) error {
 	me := field.GetPlayer(snapshot, b.side, b.number)
