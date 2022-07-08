@@ -4,7 +4,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/lugobots/the-dummies-go)](https://goreportcard.com/report/github.com/lugobots/the-dummies-go)
 
 The Dummies Go is a [Go](http://golang.org/) implementation of a player (bot) for [Lugo](https://lugobots.dev) game.
-This bot was made using the [Go Client Player](https://github.com/lugobots/client-player-go).
+This bot was made using the [Go Client Player](https://github.com/lugobots/lugo4go).
 
 As this name suggest, _The Dummies_ are not that smart, but they may play well enough to help you to test your bot.
 
