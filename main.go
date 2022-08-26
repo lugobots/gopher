@@ -1,10 +1,12 @@
 package main
 
 import (
+	"log"
+
 	clientGo "github.com/lugobots/lugo4go/v2"
 	"github.com/lugobots/lugo4go/v2/pkg/util"
+
 	"github.com/lugobots/the-dummies-go/v2/bot"
-	"log"
 )
 
 func main() {

@@ -1,63 +1,194 @@
 version: '3.4'
 services:
   game_server:
-    image: lugobots/server:${SERVER_VERSION}
+    image: lugobots/server:${SERVER_VERSION:-latest}
     command: play --dev-mode --timer-mode=wait
     ports:
       - "5000:5000"
       - "8080:8080"
+
+  builder:
+    image: golang:1.17
+    working_dir: /app
+    command:
+      - /bin/sh
+      - -c
+      - rm /app/my_bot_binary || go mod vendor && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /app/my_bot_binary main.go
+    volumes:
+      - ./:/app
+  player_home_01:
+    image: golang:1.17
+    command: /app/wait_to_compile.sh
+#    command: /app/my_bot_binary -team=home -number=1 -grpc_address=game_server:5000
+    depends_on:
+      - game_server
+      - builder
+    volumes:
+      - ./:/app
+
+  player_home_02:
+    image: golang:1.17
+    command: /app/wait_to_compile.sh
+#    command: /app/my_bot_binary -team=home -number=2 -grpc_address=game_server:5000
+    depends_on:
+      - game_server
+      - builder
+    volumes:
+      - ./:/app
+
+  player_home_03:
+    image: golang:1.17
+    command: /app/wait_to_compile.sh
+#    command: /app/my_bot_binary -team=home -number=3 -grpc_address=game_server:5000
+    depends_on:
+      - game_server
+      - builder
+    volumes:
+      - ./:/app
+
+  player_home_04:
+    image: golang:1.17
+    command: /app/wait_to_compile.sh
+#    command: /app/my_bot_binary -team=home -number=4 -grpc_address=game_server:5000
+    depends_on:
+      - game_server
+      - builder
+    volumes:
+      - ./:/app
+
+  player_home_05:
+    image: golang:1.17
+    command: /app/wait_to_compile.sh
+#    command: /app/my_bot_binary -team=home -number=5 -grpc_address=game_server:5000
+    depends_on:
+      - game_server
+      - builder
+    volumes:
+      - ./:/app
+
+  player_home_06:
+    image: golang:1.17
+    command: /app/wait_to_compile.sh
+#    command: /app/my_bot_binary -team=home -number=6 -grpc_address=game_server:5000
+    depends_on:
+      - game_server
+      - builder
+    volumes:
+      - ./:/app
+
+  player_home_07:
+    image: golang:1.17
+    command: /app/wait_to_compile.sh
+#    command: /app/my_bot_binary -team=home -number=7 -grpc_address=game_server:5000
+    depends_on:
+      - game_server
+      - builder
+    volumes:
+      - ./:/app
+
+  player_home_08:
+    image: golang:1.17
+    command: /app/wait_to_compile.sh
+#    command: /app/my_bot_binary -team=home -number=8 -grpc_address=game_server:5000
+    depends_on:
+      - game_server
+      - builder
+    volumes:
+      - ./:/app
+
+  player_home_09:
+    image: golang:1.17
+    command: /app/wait_to_compile.sh
+#    command: /app/my_bot_binary -team=home -number=9 -grpc_address=game_server:5000
+    depends_on:
+      - game_server
+      - builder
+    volumes:
+      - ./:/app
+
+  player_home_10:
+    image: golang:1.17
+    command: /app/wait_to_compile.sh
+#    command: /app/my_bot_binary -team=home -number=10 -grpc_address=game_server:5000
+    depends_on:
+      - game_server
+      - builder
+    volumes:
+      - ./:/app
+
+  player_home_11:
+    image: golang:1.17
+    command: /app/wait_to_compile.sh
+#    command: /app/my_bot_binary -team=home -number=11 -grpc_address=game_server:5000
+    depends_on:
+      - game_server
+      - builder
+    volumes:
+      - ./:/app
+
   player_away_01:
-    image: ${AWAY_TEAM}
-    command:  -team=away -number=1 -grpc_address=game_server:5000
-    depends_on:
-      - game_server
+    image: ${AWAY_BOT:-lugobots/the-dummies-go:latest}
+    network_mode: "host"
+    environment:
+      - BOT_NUMBER=1
+      - BOT_TEAM=away
   player_away_02:
-    image: ${AWAY_TEAM}
-    command:  -team=away -number=2 -grpc_address=game_server:5000
-    depends_on:
-      - game_server
+    image: ${AWAY_BOT:-lugobots/the-dummies-go:latest}
+    network_mode: "host"
+    environment:
+      - BOT_NUMBER=2
+      - BOT_TEAM=away
   player_away_03:
-    image: ${AWAY_TEAM}
-    command:  -team=away -number=3 -grpc_address=game_server:5000
-    depends_on:
-      - game_server
+    image: ${AWAY_BOT:-lugobots/the-dummies-go:latest}
+    network_mode: "host"
+    environment:
+      - BOT_NUMBER=3
+      - BOT_TEAM=away
   player_away_04:
-    image: ${AWAY_TEAM}
-    command:  -team=away -number=4 -grpc_address=game_server:5000
-    depends_on:
-      - game_server
+    image: ${AWAY_BOT:-lugobots/the-dummies-go:latest}
+    network_mode: "host"
+    environment:
+      - BOT_NUMBER=4
+      - BOT_TEAM=away
   player_away_05:
-    image: ${AWAY_TEAM}
-    command:  -team=away -number=5 -grpc_address=game_server:5000
-    depends_on:
-      - game_server
+    image: ${AWAY_BOT:-lugobots/the-dummies-go:latest}
+    network_mode: "host"
+    environment:
+      - BOT_NUMBER=5
+      - BOT_TEAM=away
   player_away_06:
-    image: ${AWAY_TEAM}
-    command:  -team=away -number=6 -grpc_address=game_server:5000
-    depends_on:
-      - game_server
+    image: ${AWAY_BOT:-lugobots/the-dummies-go:latest}
+    network_mode: "host"
+    environment:
+      - BOT_NUMBER=6
+      - BOT_TEAM=away
   player_away_07:
-    image: ${AWAY_TEAM}
-    command:  -team=away -number=7 -grpc_address=game_server:5000
-    depends_on:
-      - game_server
+    image: ${AWAY_BOT:-lugobots/the-dummies-go:latest}
+    network_mode: "host"
+    environment:
+      - BOT_NUMBER=7
+      - BOT_TEAM=away
   player_away_08:
-    image: ${AWAY_TEAM}
-    command:  -team=away -number=8 -grpc_address=game_server:5000
-    depends_on:
-      - game_server
+    image: ${AWAY_BOT:-lugobots/the-dummies-go:latest}
+    network_mode: "host"
+    environment:
+      - BOT_NUMBER=8
+      - BOT_TEAM=away
   player_away_09:
-    image: ${AWAY_TEAM}
-    command:  -team=away -number=9 -grpc_address=game_server:5000
-    depends_on:
-      - game_server
+    image: ${AWAY_BOT:-lugobots/the-dummies-go:latest}
+    network_mode: "host"
+    environment:
+      - BOT_NUMBER=9
+      - BOT_TEAM=away
   player_away_10:
-    image: ${AWAY_TEAM}
-    command:  -team=away -number=10 -grpc_address=game_server:5000
-    depends_on:
-      - game_server
+    image: ${AWAY_BOT:-lugobots/the-dummies-go:latest}
+    network_mode: "host"
+    environment:
+      - BOT_NUMBER=10
+      - BOT_TEAM=away
   player_away_11:
-    image: ${AWAY_TEAM}
-    command:  -team=away -number=11 -grpc_address=game_server:5000
-    depends_on:
-      - game_server
+    image: ${AWAY_BOT:-lugobots/the-dummies-go:latest}
+    network_mode: "host"
+    environment:
+      - BOT_NUMBER=11
+      - BOT_TEAM=away
