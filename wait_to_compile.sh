@@ -16,7 +16,7 @@ until [[ -f "$FILE" ]]
 do
    sleep 0.5
    [[ counter -eq $max_retry ]] && echo "Failed!" && exit 1
-   echo "Trying again. Try #$counter"
+   echo "Waiting bot be compiled again. Try #$counter"
    ((counter++))
 done
 
