@@ -19,110 +19,143 @@ services:
   player_home_01:
     image: golang:1.17
     command: /app/wait_to_compile.sh
-#    command: /app/my_bot_binary -team=home -number=1 -grpc_address=game_server:5000
     depends_on:
       - game_server
       - builder
+    environment:
+      - BOT_NUMBER=1
+      - BOT_TEAM=home
+      - BOT_GRPC_URL=game_server:5000
     volumes:
       - ./:/app
 
   player_home_02:
     image: golang:1.17
     command: /app/wait_to_compile.sh
-#    command: /app/my_bot_binary -team=home -number=2 -grpc_address=game_server:5000
     depends_on:
       - game_server
       - builder
+    environment:
+      - BOT_NUMBER=2
+      - BOT_TEAM=home
+      - BOT_GRPC_URL=game_server:5000
     volumes:
       - ./:/app
 
   player_home_03:
     image: golang:1.17
     command: /app/wait_to_compile.sh
-#    command: /app/my_bot_binary -team=home -number=3 -grpc_address=game_server:5000
     depends_on:
       - game_server
       - builder
+    environment:
+      - BOT_NUMBER=3
+      - BOT_TEAM=home
+      - BOT_GRPC_URL=game_server:5000
     volumes:
       - ./:/app
 
   player_home_04:
     image: golang:1.17
     command: /app/wait_to_compile.sh
-#    command: /app/my_bot_binary -team=home -number=4 -grpc_address=game_server:5000
     depends_on:
       - game_server
       - builder
+    environment:
+      - BOT_NUMBER=4
+      - BOT_TEAM=home
+      - BOT_GRPC_URL=game_server:5000
     volumes:
       - ./:/app
 
   player_home_05:
     image: golang:1.17
     command: /app/wait_to_compile.sh
-#    command: /app/my_bot_binary -team=home -number=5 -grpc_address=game_server:5000
     depends_on:
       - game_server
       - builder
+    environment:
+      - BOT_NUMBER=5
+      - BOT_TEAM=home
+      - BOT_GRPC_URL=game_server:5000
     volumes:
       - ./:/app
 
   player_home_06:
     image: golang:1.17
     command: /app/wait_to_compile.sh
-#    command: /app/my_bot_binary -team=home -number=6 -grpc_address=game_server:5000
     depends_on:
       - game_server
       - builder
+    environment:
+      - BOT_NUMBER=6
+      - BOT_TEAM=home
+      - BOT_GRPC_URL=game_server:5000
     volumes:
       - ./:/app
 
   player_home_07:
     image: golang:1.17
     command: /app/wait_to_compile.sh
-#    command: /app/my_bot_binary -team=home -number=7 -grpc_address=game_server:5000
     depends_on:
       - game_server
       - builder
+    environment:
+      - BOT_NUMBER=7
+      - BOT_TEAM=home
+      - BOT_GRPC_URL=game_server:5000
     volumes:
       - ./:/app
 
   player_home_08:
     image: golang:1.17
     command: /app/wait_to_compile.sh
-#    command: /app/my_bot_binary -team=home -number=8 -grpc_address=game_server:5000
     depends_on:
       - game_server
       - builder
+    environment:
+      - BOT_NUMBER=8
+      - BOT_TEAM=home
+      - BOT_GRPC_URL=game_server:5000
     volumes:
       - ./:/app
 
   player_home_09:
     image: golang:1.17
     command: /app/wait_to_compile.sh
-#    command: /app/my_bot_binary -team=home -number=9 -grpc_address=game_server:5000
     depends_on:
       - game_server
       - builder
+    environment:
+      - BOT_NUMBER=9
+      - BOT_TEAM=home
+      - BOT_GRPC_URL=game_server:5000
     volumes:
       - ./:/app
 
   player_home_10:
     image: golang:1.17
     command: /app/wait_to_compile.sh
-#    command: /app/my_bot_binary -team=home -number=10 -grpc_address=game_server:5000
     depends_on:
       - game_server
       - builder
+    environment:
+      - BOT_NUMBER=10
+      - BOT_TEAM=home
+      - BOT_GRPC_URL=game_server:5000
     volumes:
       - ./:/app
 
   player_home_11:
     image: golang:1.17
     command: /app/wait_to_compile.sh
-#    command: /app/my_bot_binary -team=home -number=11 -grpc_address=game_server:5000
     depends_on:
       - game_server
       - builder
+    environment:
+      - BOT_NUMBER=11
+      - BOT_TEAM=home
+      - BOT_GRPC_URL=game_server:5000
     volumes:
       - ./:/app
 
