@@ -11,6 +11,8 @@ import (
 
 func DefineRole(number uint32) Role {
 	// starting from 2 because the number goalkeeper has no role
+
+	// current disposition: 4-4-2
 	switch number {
 	case 2, 3, 4, 5:
 		return Defense
@@ -57,6 +59,7 @@ func isNear(a, b field.Region) bool {
 	return math.Hypot(float64(colDist), float64(rowDist)) <= minDist
 }
 
+// processServerResp is a shortcut to evaluate the return of the server when we send orders
 func processServerResp(resp *proto.OrderResponse, err error) error {
 	if err != nil {
 		return errors.Wrapf(err, "error sending orders")

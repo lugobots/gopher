@@ -15,8 +15,8 @@ As this name suggest, _The Dummies_ are not that smart, but they may play well e
 
 ## Before starting
 
-Are you familiar with Lugo?
-If not, before continuing, please visit [the project website](https://lugobots.dev) and read about the game.
+Are you familiar with Lugo? If not, before continuing, please visit [the project website](https://lugobots.dev) and read
+about the game.
 
 ## How to use this source code
 
@@ -45,5 +45,43 @@ If not, before continuing, please visit [the project website](https://lugobots.d
    MY_BOT=my-super-bot docker-compose --file docker-compose-test.yml up
    ```
 
-## How to edit the bot   
+## How to edit the bot
 
+The only files that you may need to edit are the ones inside [./bot](./bot) directory. Ignore all the other ones.
+
+### Helper functions file [bot/helpers.go](./bot/helpers.go)
+
+You may need to change this file if you want to change the player disposition in the field. E.g. if you want to change
+the 4-4-2 disposition.
+
+### Settings file [bot/settings.go](./bot/settings.go)
+
+This file defines where the players will act based on the team state (attacking, defending, etc.) and also define the
+field grid.
+
+### Main file [bot/bot.go](./bot/bot.go)
+
+:eyes: This is the most important file!
+
+There will be 5 important methods that you must edit to change the bot behaviour.
+
+```go
+
+type Bot interface {
+   // OnDisputing is called when no one has the ball possession
+   OnDisputing(ctx context.Context, sender TurnOrdersSender, snapshot *proto.GameSnapshot) error
+   
+   // OnDefending is called when an opponent player has the ball possession
+   OnDefending(ctx context.Context, sender TurnOrdersSender, snapshot *proto.GameSnapshot) error
+   
+   // OnHolding is called when this bot has the ball possession
+   OnHolding(ctx context.Context, sender TurnOrdersSender, snapshot *proto.GameSnapshot) error
+   
+   // OnSupporting is called when a teammate player has the ball possession
+   OnSupporting(ctx context.Context, sender TurnOrdersSender, snapshot *proto.GameSnapshot) error
+   
+   // AsGoalkeeper is only called when this bot is the goalkeeper (number 1). This method is called on every turn,
+   // and the player state is passed at the last parameter.
+   AsGoalkeeper(ctx context.Context, sender TurnOrdersSender, snapshot *proto.GameSnapshot, state PlayerState) error
+}
+```

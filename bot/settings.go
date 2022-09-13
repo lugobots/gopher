@@ -5,51 +5,14 @@ import (
 	"time"
 )
 
-type TeamState string
-
-type Role string
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
-
-// IMPORTANT: all this constant sets below may be changed (see each set instructions). However, any change will
-// affect the tactic defined in tactic.go file. So you must go there and adapt your tactics to your new settings.
-
-// You however, may increase or decrease their values to change the precision of the Positioner.
-// These values define how the field will be divided by the Positioner to create a field map.
-
-// please update the tests if you include more states, or exclude some of them.
-const (
-	Initial       TeamState = "initial"
-	UnderPressure TeamState = "under-pressure"
-	Defensive     TeamState = "defensive"
-	Neutral       TeamState = "neutral"
-	Offensive     TeamState = "offensive"
-	OnAttack      TeamState = "on-attack"
-)
-const (
-	Defense Role = "defense"
-	Middle  Role = "middle"
-	Attack  Role = "attack"
-)
-
-type RegionCode struct {
-	Col uint8
-	Row uint8
-}
-
-type PlayerActionRegions map[TeamState]RegionCode
-
-func DefinePlayerActionRegions(number uint32) PlayerActionRegions {
-	return roleMap[number]
-}
-
+// if you change the number of cols/rows you must update the roleMap variable!
 const (
 	FieldGridCols = 10
 	FieldGridRows = 8
 )
 
+// roleMap define the main region of each please based on the team state
+// the team state is defined by a helper function
 var roleMap = map[uint32]PlayerActionRegions{
 	// starting from 2 because the number goalkeeper has PlayerActionRegions
 	2: {
@@ -132,4 +95,37 @@ var roleMap = map[uint32]PlayerActionRegions{
 		Offensive:     {7, 2},
 		OnAttack:      {9, 2},
 	},
+}
+
+type TeamState string
+
+type Role string
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
+const (
+	Initial       TeamState = "initial"
+	UnderPressure TeamState = "under-pressure"
+	Defensive     TeamState = "defensive"
+	Neutral       TeamState = "neutral"
+	Offensive     TeamState = "offensive"
+	OnAttack      TeamState = "on-attack"
+)
+const (
+	Defense Role = "defense"
+	Middle  Role = "middle"
+	Attack  Role = "attack"
+)
+
+type RegionCode struct {
+	Col uint8
+	Row uint8
+}
+
+type PlayerActionRegions map[TeamState]RegionCode
+
+func DefinePlayerActionRegions(number uint32) PlayerActionRegions {
+	return roleMap[number]
 }
