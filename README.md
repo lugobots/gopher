@@ -10,8 +10,8 @@ As this name suggest, _The Dummies_ are not that smart, but they may play well e
 
 ## Requirements
 
-0. Docker >= 18.03 (https://docs.docker.com/install/)
-0. Docker Compose >= 1.21 (https://docs.docker.com/compose/install/)
+0. Docker >= 20.10 (https://docs.docker.com/install/)
+0. Docker Compose >= 2.10 (https://docs.docker.com/compose/install/)
 
 ## Before starting
 
