@@ -18,7 +18,7 @@ services:
     command:
       - /bin/sh
       - -c
-      - rm /app/my_bot_binary || go mod vendsudo apt-get updateor && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /app/my_bot_binary main.go
+      - rm -f /app/my_bot_binary && go mod vendor && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /app/my_bot_binary main.go
     volumes:
       - ./:/app
   player_home_01:
