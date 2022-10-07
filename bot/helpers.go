@@ -1,71 +1,71 @@
 package bot
 
 import (
+	"fmt"
+	"math"
+
 	"github.com/lugobots/lugo4go/v2/pkg/field"
 	"github.com/lugobots/lugo4go/v2/proto"
 	"github.com/pkg/errors"
-	"math"
-	"sort"
 )
 
-func DistanceBetweenRegions(a, b field.Region) float64 {
-	return math.Hypot(
-		math.Abs(float64(a.Col()-b.Col())),
-		math.Abs(float64(b.Col()-b.Col())),
-	)
+func DefineRole(number uint32) Role {
+	// starting from 2 because the number goalkeeper has no role
+
+	// current disposition: 4-4-2
+	switch number {
+	case 2, 3, 4, 5:
+		return Defense
+	case 6, 7, 8, 9:
+		return Middle
+	case 10, 11:
+		return Attack
+	}
+	return ""
 }
 
-type obstacleDetails struct {
-	position               *proto.Point
-	distanceFromTrajectory float64
-}
-
-func findOpponentsOnMyRoute(origin, target *proto.Point, margin float64, opponentTeam []*proto.Player) ([]obstacleDetails, error) {
-	var obstacles []obstacleDetails
-
-	minX := int32(math.Min(float64(origin.X), float64(target.X)))
-	maxX := int32(math.Max(float64(origin.X), float64(target.X)))
-	minY := int32(math.Min(float64(origin.Y), float64(target.Y)))
-	maxY := int32(math.Max(float64(origin.Y), float64(target.Y)))
-
-	for _, opponent := range opponentTeam {
-		pointX := opponent.Position.X
-		pointY := opponent.Position.Y
-
-		x1 := origin.X
-		y1 := origin.Y
-		x2 := target.X
-		y2 := target.Y
-
-		// formula found at "Line defined by two points"  https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
-		distanceToTrajectory := (float64((x2-x1)*(y1-pointY)) - float64((x1-pointX)*(y2-y1))) /
-			math.Sqrt(math.Pow(float64(x2-x1), 2)+math.Pow(float64(y2-y1), 2))
-
-		if math.Abs(distanceToTrajectory) <= margin &&
-			((opponent.Position.X > minX && opponent.Position.X < maxX) ||
-				(opponent.Position.Y > minY && opponent.Position.Y < maxY)) {
-			obstacles = append(obstacles, obstacleDetails{
-				position:               opponent.Position,
-				distanceFromTrajectory: distanceToTrajectory,
-			})
+func DetermineTeamState(ballRegion field.Region, myTeamSide, possession proto.Team_Side) (s TeamState, e error) {
+	regionCol := ballRegion.Col()
+	if possession == myTeamSide {
+		switch regionCol {
+		case 5, 6, 7, 8, 9:
+			return OnAttack, nil
+		case 2, 3, 4:
+			return Offensive, nil
+		case 0, 1:
+			return Neutral, nil
 		}
-	}
-	sort.Slice(obstacles, func(i, j int) bool {
-		return math.Abs(obstacles[i].distanceFromTrajectory) < math.Abs(obstacles[j].distanceFromTrajectory)
-	})
 
-	return obstacles, nil
+	} else {
+		switch regionCol {
+		case 9:
+			return Defensive, nil
+		case 6, 7, 8:
+			return Defensive, nil
+		case 3, 4, 5:
+			return Defensive, nil
+		case 0, 1, 2:
+			return UnderPressure, nil
+		}
+		//return Offensive, nil
+	}
+	return "", fmt.Errorf("unknown team state for ball in %d col, tor possion with %s", regionCol, possession)
 }
 
-// QuadraticResults resolves a quadratic function returning the x1 and x2
-func QuadraticResults(a, b, c float64) (float64, float64, error) {
-	if a == 0 {
-		return 0, 0, errors.New("a cannot be zero")
+func isNear(a, b field.Region) bool {
+	const minDist = 2
+	colDist := a.Col() - b.Col()
+	rowDist := a.Row() - b.Row()
+	return math.Hypot(float64(colDist), float64(rowDist)) <= minDist
+}
+
+// processServerResp is a shortcut to evaluate the return of the server when we send orders
+func processServerResp(resp *proto.OrderResponse, err error) error {
+	if err != nil {
+		return errors.Wrapf(err, "error sending orders")
 	}
-	// delta: B^2 -4.A.C
-	delta := math.Pow(b, 2) - 4*a*c
-	// quadratic formula: -b +/- sqrt(delta)/2a
-	t1 := (-b + math.Sqrt(delta)) / (2 * a)
-	t2 := (-b - math.Sqrt(delta)) / (2 * a)
-	return t1, t2, nil
+	if resp.Code != proto.OrderResponse_SUCCESS {
+		return errors.Errorf("server responded a non-success code: %s", resp.Code.String())
+	}
+	return nil
 }

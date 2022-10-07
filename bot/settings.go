@@ -1,10 +1,101 @@
 package bot
 
 import (
-	"github.com/lugobots/lugo4go/v2/pkg/field"
 	"math/rand"
 	"time"
 )
+
+// if you change the number of cols/rows you must update the roleMap variable!
+const (
+	FieldGridCols = 10
+	FieldGridRows = 8
+)
+
+// roleMap define the main region of each please based on the team state
+// the team state is defined by a helper function
+var roleMap = map[uint32]PlayerActionRegions{
+	// starting from 2 because the number goalkeeper has PlayerActionRegions
+	2: {
+		Initial:       {1, 2},
+		UnderPressure: {0, 3},
+		Defensive:     {1, 3},
+		Neutral:       {2, 3},
+		Offensive:     {2, 3},
+		OnAttack:      {5, 3},
+	},
+	3: {
+		Initial:       {1, 5},
+		UnderPressure: {0, 4},
+		Defensive:     {1, 4},
+		Neutral:       {2, 4},
+		Offensive:     {2, 4},
+		OnAttack:      {5, 4},
+	},
+	4: {
+		Initial:       {2, 6},
+		UnderPressure: {1, 6},
+		Defensive:     {2, 6},
+		Neutral:       {3, 6},
+		Offensive:     {5, 5},
+		OnAttack:      {6, 5},
+	},
+	5: {
+		Initial:       {2, 1},
+		UnderPressure: {1, 1},
+		Defensive:     {2, 1},
+		Neutral:       {3, 1},
+		Offensive:     {5, 2},
+		OnAttack:      {6, 2},
+	},
+	6: {
+		Initial:       {3, 6},
+		UnderPressure: {1, 5},
+		Defensive:     {2, 5},
+		Neutral:       {4, 5},
+		Offensive:     {8, 7},
+		OnAttack:      {9, 6},
+	},
+	7: {
+		Initial:       {3, 1},
+		UnderPressure: {1, 2},
+		Defensive:     {2, 2},
+		Neutral:       {4, 2},
+		Offensive:     {8, 0},
+		OnAttack:      {9, 1},
+	},
+	8: {
+		Initial:       {3, 3},
+		UnderPressure: {1, 3},
+		Defensive:     {3, 3},
+		Neutral:       {4, 3},
+		Offensive:     {6, 3},
+		OnAttack:      {7, 3},
+	},
+	9: {
+		Initial:       {3, 4},
+		UnderPressure: {1, 4},
+		Defensive:     {3, 4},
+		Neutral:       {4, 4},
+		Offensive:     {6, 4},
+		OnAttack:      {7, 4},
+	},
+	10: {
+		Initial:       {4, 5},
+		UnderPressure: {2, 5},
+		Defensive:     {4, 5},
+		Neutral:       {5, 6},
+		Offensive:     {7, 5},
+		OnAttack:      {8, 5},
+	},
+	11: {
+		Initial:       {4, 2},
+		UnderPressure: {2, 2},
+		Defensive:     {4, 2},
+		Neutral:       {5, 1},
+		Offensive:     {7, 2},
+		OnAttack:      {9, 2},
+	},
+}
 
 type TeamState string
 
@@ -14,13 +105,6 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
-// IMPORTANT: all this constant sets below may be changed (see each set instructions). However, any change will
-// affect the tactic defined in tactic.go file. So you must go there and adapt your tactics to your new settings.
-
-// You however, may increase or decrease their values to change the precision of the Positioner.
-// These values define how the field will be divided by the Positioner to create a field map.
-
-// please update the tests if you include more states, or exclude some of them.
 const (
 	Initial       TeamState = "initial"
 	UnderPressure TeamState = "under-pressure"
@@ -33,23 +117,6 @@ const (
 	Defense Role = "defense"
 	Middle  Role = "middle"
 	Attack  Role = "attack"
-)
-
-type FuzzyScale int
-
-const (
-	MustNot FuzzyScale = iota
-	ShouldNot
-	May
-	Should
-	Must
-)
-
-const (
-	DistanceBeside = field.FieldWidth / 10
-	DistanceNear   = field.FieldWidth / 8
-	DistanceFar    = field.FieldWidth / 6
-	DistanceTooFar = field.FieldWidth / 4
 )
 
 type RegionCode struct {
