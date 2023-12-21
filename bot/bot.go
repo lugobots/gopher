@@ -5,14 +5,14 @@ import (
 	"math"
 
 	"github.com/lugobots/lugo4go/v3"
-	"github.com/lugobots/lugo4go/v3/mapper"
+	"github.com/lugobots/lugo4go/v3/field"
 	"github.com/lugobots/lugo4go/v3/proto"
 	"github.com/lugobots/lugo4go/v3/specs"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
-func NewBot(FieldMapper mapper.Mapper, Config lugo4go.Config, Logger *zap.SugaredLogger) *Bot {
+func NewBot(FieldMapper field.Mapper, Config lugo4go.Config, Logger *zap.SugaredLogger) *Bot {
 	return &Bot{
 		FieldMapper: FieldMapper,
 		Config:      Config,
@@ -21,7 +21,7 @@ func NewBot(FieldMapper mapper.Mapper, Config lugo4go.Config, Logger *zap.Sugare
 }
 
 type Bot struct {
-	FieldMapper mapper.Mapper
+	FieldMapper field.Mapper
 	Config      lugo4go.Config
 	Logger      *zap.SugaredLogger
 }
@@ -104,7 +104,7 @@ func (b *Bot) OnHolding(_ context.Context, inspector lugo4go.SnapshotInspector) 
 
 	// if we are near to the goal, let's kick it!
 	if !isNear(myRegion, goalRegion) {
-		return []proto.PlayerOrder{inspector.MakeOrderMoveByDirection(mapper.Forward, specs.PlayerMaxSpeed)}, "trying to catch the ball", nil
+		return []proto.PlayerOrder{inspector.MakeOrderMoveByDirection(field.Forward, specs.PlayerMaxSpeed)}, "trying to catch the ball", nil
 	}
 
 	kickOrder, err := inspector.MakeOrderKickMaxSpeed(goal.Center)
@@ -149,7 +149,7 @@ func (b *Bot) OnSupporting(_ context.Context, inspector lugo4go.SnapshotInspecto
 
 func (b *Bot) AsGoalkeeper(_ context.Context, inspector lugo4go.SnapshotInspector, myState lugo4go.PlayerState) ([]proto.PlayerOrder, string, error) {
 	if myState == lugo4go.HoldingTheBall {
-		kickOrder, err := inspector.MakeOrderKickMaxSpeed(mapper.FieldCenter())
+		kickOrder, err := inspector.MakeOrderKickMaxSpeed(field.FieldCenter())
 		if err != nil {
 			return nil, "", errors.Wrap(err, "failed to create kick order")
 		}
@@ -185,7 +185,7 @@ func (b *Bot) holdPosition(inspector lugo4go.SnapshotInspector) ([]proto.PlayerO
 	return []proto.PlayerOrder{moveOrder}, "moving to my region", nil
 }
 
-func isNear(a, b mapper.Region) bool {
+func isNear(a, b field.Region) bool {
 	const minDist = 2
 	colDist := a.Col() - b.Col()
 	rowDist := a.Row() - b.Row()

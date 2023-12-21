@@ -2,7 +2,7 @@ package bot
 
 import (
 	"github.com/lugobots/lugo4go/v3"
-	"github.com/lugobots/lugo4go/v3/mapper"
+	"github.com/lugobots/lugo4go/v3/field"
 )
 
 // DefaultInitialPositions is a list of field map coordinates to define the initial position of each player
@@ -23,7 +23,7 @@ var DefaultInitialPositions = map[int]struct {
 	11: {Col: 6, Row: 4},
 }
 
-func GetPlayerTacticRegion(inspector lugo4go.SnapshotInspector, fieldMap mapper.Mapper, playerNumber int) mapper.Region {
+func GetPlayerTacticRegion(inspector lugo4go.SnapshotInspector, fieldMap field.Mapper, playerNumber int) field.Region {
 	ballRegion, _ := fieldMap.GetPointRegion(inspector.GetBall().GetPosition())
 	regionCol := ballRegion.Col()
 

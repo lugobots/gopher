@@ -5,7 +5,7 @@ import (
 
 	"github.com/lugobots/lugo4go/v3"
 
-	"github.com/lugobots/the-dummies-go/v3/bot"
+	"my-bot/bot"
 )
 
 func main() {
@@ -16,10 +16,10 @@ func main() {
 
 	// OPTIONAL
 	// define your own field mapper! The default number of col/rows are defined by lugo4go.DefaultFieldMapCols and lugo4go.DefaultFieldMapRows
-	// defaultFieldMapper, err = mapper.NewMapper(NUM_COLS, NUM_ROWS, connectionStarter.Config.TeamSide)
-	// if err != nil {
-	// 	log.Fatalf("failed to create a field mapper: %s", err)
-	// }
+	//defaultFieldMapper, err = field.NewMapper(NUM_COLS, NUM_ROWS, connectionStarter.Config.TeamSide)
+	//if err != nil {
+	//	log.Fatalf("failed to create a field mapper: %s", err)
+	//}
 
 	// create your bot as you wish
 	// in this example, the bot requires the field mapper, the connection config, and a logger.

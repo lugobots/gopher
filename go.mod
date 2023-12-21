@@ -1,9 +1,9 @@
-module github.com/lugobots/the-dummies-go/v3
+module my-bot
 
 go 1.21
 
 require (
-	github.com/lugobots/lugo4go/v3 v3.0.0-rc.3
+	github.com/lugobots/lugo4go/v3 v3.0.0-rc.4
 	github.com/pkg/errors v0.8.1
 	go.uber.org/zap v1.13.0
 )
