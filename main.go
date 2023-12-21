@@ -14,8 +14,8 @@ func main() {
 		log.Fatalf("failed to load the bot configuration: %s", err)
 	}
 
-	//
-	// Optional: define your own field mapper
+	// OPTIONAL
+	// define your own field mapper! The default number of col/rows are defined by lugo4go.DefaultFieldMapCols and lugo4go.DefaultFieldMapRows
 	// defaultFieldMapper, err = mapper.NewMapper(NUM_COLS, NUM_ROWS, connectionStarter.Config.TeamSide)
 	// if err != nil {
 	// 	log.Fatalf("failed to create a field mapper: %s", err)
@@ -28,6 +28,15 @@ func main() {
 		connectionStarter.Config,
 		connectionStarter.Logger,
 	)
+
+	// Here you define the initial position of your bot. It's important to use the field mapper instead of points because
+	// the field mapper won't be affected when your bot is playing on the away side
+	initialPosition := bot.DefaultInitialPositions[connectionStarter.Config.Number]
+	region, err := defaultFieldMapper.GetRegion(initialPosition.Col, initialPosition.Row)
+	if err != nil {
+		log.Fatalf("failed to define initial position using field mapper: %s", err)
+	}
+	connectionStarter.Config.InitialPosition = region.Center()
 
 	// then lets play
 	if err := connectionStarter.Run(myBot); err != nil {

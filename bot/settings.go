@@ -5,6 +5,24 @@ import (
 	"github.com/lugobots/lugo4go/v3/mapper"
 )
 
+// DefaultInitialPositions is a list of field map coordinates to define the initial position of each player
+// The goalkeeper has a fixed initial position.
+var DefaultInitialPositions = map[int]struct {
+	Col int
+	Row int
+}{
+	2:  {Col: 1, Row: 2},
+	3:  {Col: 1, Row: 3},
+	4:  {Col: 1, Row: 4},
+	5:  {Col: 1, Row: 5},
+	6:  {Col: 4, Row: 1},
+	7:  {Col: 4, Row: 3},
+	8:  {Col: 4, Row: 4},
+	9:  {Col: 4, Row: 6},
+	10: {Col: 6, Row: 3},
+	11: {Col: 6, Row: 4},
+}
+
 func GetPlayerTacticRegion(inspector lugo4go.SnapshotInspector, fieldMap mapper.Mapper, playerNumber int) mapper.Region {
 	ballRegion, _ := fieldMap.GetPointRegion(inspector.GetBall().GetPosition())
 	regionCol := ballRegion.Col()
@@ -25,19 +43,6 @@ var DefaultTacticPositions = map[string]map[int]struct {
 	Col int
 	Row int
 }{
-
-	"initial": {
-		2:  {Col: 1, Row: 2},
-		3:  {Col: 1, Row: 3},
-		4:  {Col: 1, Row: 4},
-		5:  {Col: 1, Row: 5},
-		6:  {Col: 4, Row: 1},
-		7:  {Col: 4, Row: 3},
-		8:  {Col: 4, Row: 4},
-		9:  {Col: 4, Row: 6},
-		10: {Col: 6, Row: 3},
-		11: {Col: 6, Row: 4},
-	},
 	"defensive": {
 		2:  {Col: 1, Row: 2},
 		3:  {Col: 1, Row: 3},
