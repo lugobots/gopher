@@ -21,11 +21,16 @@ func main() {
 	// 	log.Fatalf("failed to create a field mapper: %s", err)
 	// }
 
-	if err := connectionStarter.Run(bot.NewBot(
+	// create your bot as you wish
+	// in this example, the bot requires the field mapper, the connection config, and a logger.
+	myBot := bot.NewBot(
 		defaultFieldMapper,
 		connectionStarter.Config,
 		connectionStarter.Logger,
-	)); err != nil {
+	)
+
+	// then lets play
+	if err := connectionStarter.Run(myBot); err != nil {
 		log.Fatalf("bot stopped: %s", err)
 	}
 }
