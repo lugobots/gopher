@@ -1,10 +1,11 @@
-module github.com/lugobots/the-dummies-go/v2
+module github.com/lugobots/the-dummies-go/v3
 
-go 1.17
+go 1.21
 
 require (
-	github.com/lugobots/lugo4go/v2 v2.0.0-beta
+	github.com/lugobots/lugo4go/v3 v3.0.0-rc.2
 	github.com/pkg/errors v0.8.1
+	go.uber.org/zap v1.13.0
 )
 
 require (
@@ -13,7 +14,6 @@ require (
 	go.uber.org/atomic v1.5.0 // indirect
 	go.uber.org/multierr v1.3.0 // indirect
 	go.uber.org/tools v0.0.0-20190618225709-2cfd321de3ee // indirect
-	go.uber.org/zap v1.13.0 // indirect
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
 	golang.org/x/net v0.0.0-20200226121028-0de0cce0169b // indirect
 	golang.org/x/sys v0.0.0-20191008105621-543471e840be // indirect
