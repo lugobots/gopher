@@ -90,7 +90,7 @@ func (b *Bot) OnDefending(_ context.Context, inspector lugo4go.SnapshotInspector
 func (b *Bot) OnHolding(_ context.Context, inspector lugo4go.SnapshotInspector) ([]proto.PlayerOrder, string, error) {
 	me := inspector.GetMe()
 
-	goal := b.FieldMapper.GetOpponentGoal()
+	goal := b.FieldMapper.GetAttackGoal()
 
 	goalRegion, err := b.FieldMapper.GetPointRegion(&goal.Center)
 	if err != nil {
