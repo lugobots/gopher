@@ -187,7 +187,7 @@ services:
       - ./:/app
 
   player_away_01:
-    image: ${AWAY_BOT:-lugobots/lugobots/level-1:v4-rc.1}
+    image: ${AWAY_BOT:-lugobots/level-1:v4-rc.1}
     network_mode: "host"
     depends_on:
       game_server:
@@ -197,7 +197,7 @@ services:
       - BOT_TEAM=away
       - MODE=${MODE:-default} # default zombies statues kids defenses
   player_away_02:
-    image: ${AWAY_BOT:-lugobots/lugobots/level-1:v4-rc.1}
+    image: ${AWAY_BOT:-lugobots/level-1:v4-rc.1}
     network_mode: "host"
     depends_on:
       game_server:
@@ -207,7 +207,7 @@ services:
       - BOT_TEAM=away
       - MODE=${MODE:-default} # default zombies statues kids defenses
   player_away_03:
-    image: ${AWAY_BOT:-lugobots/lugobots/level-1:v4-rc.1}
+    image: ${AWAY_BOT:-lugobots/level-1:v4-rc.1}
     network_mode: "host"
     depends_on:
       game_server:
@@ -217,7 +217,7 @@ services:
       - BOT_TEAM=away
       - MODE=${MODE:-default} # default zombies statues kids defenses
   player_away_04:
-    image: ${AWAY_BOT:-lugobots/lugobots/level-1:v4-rc.1}
+    image: ${AWAY_BOT:-lugobots/level-1:v4-rc.1}
     network_mode: "host"
     depends_on:
       game_server:
@@ -227,7 +227,7 @@ services:
       - BOT_TEAM=away
       - MODE=${MODE:-default} # default zombies statues kids defenses
   player_away_05:
-    image: ${AWAY_BOT:-lugobots/lugobots/level-1:v4-rc.1}
+    image: ${AWAY_BOT:-lugobots/level-1:v4-rc.1}
     network_mode: "host"
     depends_on:
       game_server:
@@ -237,7 +237,7 @@ services:
       - BOT_TEAM=away
       - MODE=${MODE:-default} # default zombies statues kids defenses
   player_away_06:
-    image: ${AWAY_BOT:-lugobots/lugobots/level-1:v4-rc.1}
+    image: ${AWAY_BOT:-lugobots/level-1:v4-rc.1}
     network_mode: "host"
     depends_on:
       game_server:
@@ -247,7 +247,7 @@ services:
       - BOT_TEAM=away
       - MODE=${MODE:-default} # default zombies statues kids defenses
   player_away_07:
-    image: ${AWAY_BOT:-lugobots/lugobots/level-1:v4-rc.1}
+    image: ${AWAY_BOT:-lugobots/level-1:v4-rc.1}
     network_mode: "host"
     depends_on:
       game_server:
@@ -257,7 +257,7 @@ services:
       - BOT_TEAM=away
       - MODE=${MODE:-default} # default zombies statues kids defenses
   player_away_08:
-    image: ${AWAY_BOT:-lugobots/lugobots/level-1:v4-rc.1}
+    image: ${AWAY_BOT:-lugobots/level-1:v4-rc.1}
     network_mode: "host"
     depends_on:
       game_server:
@@ -267,7 +267,7 @@ services:
       - BOT_TEAM=away
       - MODE=${MODE:-default} # default zombies statues kids defenses
   player_away_09:
-    image: ${AWAY_BOT:-lugobots/lugobots/level-1:v4-rc.1}
+    image: ${AWAY_BOT:-lugobots/level-1:v4-rc.1}
     network_mode: "host"
     depends_on:
       game_server:
@@ -277,7 +277,7 @@ services:
       - BOT_TEAM=away
       - MODE=${MODE:-default} # default zombies statues kids defenses
   player_away_10:
-    image: ${AWAY_BOT:-lugobots/lugobots/level-1:v4-rc.1}
+    image: ${AWAY_BOT:-lugobots/level-1:v4-rc.1}
     network_mode: "host"
     depends_on:
       game_server:
@@ -287,7 +287,7 @@ services:
       - BOT_TEAM=away
       - MODE=${MODE:-default} # default zombies statues kids defenses
   player_away_11:
-    image: ${AWAY_BOT:-lugobots/lugobots/level-1:v4-rc.1}
+    image: ${AWAY_BOT:-lugobots/level-1:v4-rc.1}
     network_mode: "host"
     depends_on:
       game_server:
