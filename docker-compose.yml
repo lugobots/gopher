@@ -18,12 +18,12 @@ services:
     command:
       - /bin/sh
       - -c
-      - rm -f /app/my_bot_binary && go mod vendor && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /app/my_bot_binary main.go
+      - rm -f /app/.lugo/my_bot_binary && go mod vendor && chmod -R +rw vendor && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /app/.lugo/my_bot_binary main.go
     volumes:
       - ./:/app
   player_home_01:
     image: golang:1.21
-    command: /app/my_bot_binary
+    command: /app/.lugo/my_bot_binary
     depends_on:
       game_server:
         condition: service_healthy
@@ -38,7 +38,7 @@ services:
 
   player_home_02:
     image: golang:1.21
-    command: /app/my_bot_binary
+    command: /app/.lugo/my_bot_binary
     depends_on:
       game_server:
         condition: service_healthy
@@ -53,7 +53,7 @@ services:
 
   player_home_03:
     image: golang:1.21
-    command: /app/my_bot_binary
+    command: /app/.lugo/my_bot_binary
     depends_on:
       game_server:
         condition: service_healthy
@@ -68,7 +68,7 @@ services:
 
   player_home_04:
     image: golang:1.21
-    command: /app/my_bot_binary
+    command: /app/.lugo/my_bot_binary
     depends_on:
       game_server:
         condition: service_healthy
@@ -83,7 +83,7 @@ services:
 
   player_home_05:
     image: golang:1.21
-    command: /app/my_bot_binary
+    command: /app/.lugo/my_bot_binary
     depends_on:
       game_server:
         condition: service_healthy
@@ -98,7 +98,7 @@ services:
 
   player_home_06:
     image: golang:1.21
-    command: /app/my_bot_binary
+    command: /app/.lugo/my_bot_binary
     depends_on:
       game_server:
         condition: service_healthy
@@ -113,7 +113,7 @@ services:
 
   player_home_07:
     image: golang:1.21
-    command: /app/my_bot_binary
+    command: /app/.lugo/my_bot_binary
     depends_on:
       game_server:
         condition: service_healthy
@@ -128,7 +128,7 @@ services:
 
   player_home_08:
     image: golang:1.21
-    command: /app/my_bot_binary
+    command: /app/.lugo/my_bot_binary
     depends_on:
       game_server:
         condition: service_healthy
@@ -143,7 +143,7 @@ services:
 
   player_home_09:
     image: golang:1.21
-    command: /app/my_bot_binary
+    command: /app/.lugo/my_bot_binary
     depends_on:
       game_server:
         condition: service_healthy
@@ -158,7 +158,7 @@ services:
 
   player_home_10:
     image: golang:1.21
-    command: /app/my_bot_binary
+    command: /app/.lugo/my_bot_binary
     depends_on:
       game_server:
         condition: service_healthy
@@ -173,7 +173,7 @@ services:
 
   player_home_11:
     image: golang:1.21
-    command: /app/my_bot_binary
+    command: /app/.lugo/my_bot_binary
     depends_on:
       game_server:
         condition: service_healthy
