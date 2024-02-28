@@ -2,7 +2,7 @@ version: '3.9'
 services:
   game_server:
     image: lugobots/server:${SERVER_VERSION:-latest}
-    command: play --dev-mode --timer-mode=wait
+    command: play --dev-mode --quiet --timer-mode=wait
     ports:
       - "5000:5000"
       - "8080:8080"
@@ -13,17 +13,17 @@ services:
       retries: 100
       start_period: 10s
   builder:
-    image: golang:1.17
+    image: golang:1.21
     working_dir: /app
     command:
       - /bin/sh
       - -c
-      - rm -f /app/my_bot_binary && go mod vendor && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /app/my_bot_binary main.go
+      - rm -f /app/.lugo/my_bot_binary && go mod vendor && chmod -R +rw vendor && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /app/.lugo/my_bot_binary main.go
     volumes:
       - ./:/app
   player_home_01:
-    image: golang:1.17
-    command: /app/my_bot_binary
+    image: golang:1.21
+    command: /app/.lugo/my_bot_binary
     depends_on:
       game_server:
         condition: service_healthy
@@ -37,8 +37,8 @@ services:
       - ./:/app
 
   player_home_02:
-    image: golang:1.17
-    command: /app/my_bot_binary
+    image: golang:1.21
+    command: /app/.lugo/my_bot_binary
     depends_on:
       game_server:
         condition: service_healthy
@@ -52,8 +52,8 @@ services:
       - ./:/app
 
   player_home_03:
-    image: golang:1.17
-    command: /app/my_bot_binary
+    image: golang:1.21
+    command: /app/.lugo/my_bot_binary
     depends_on:
       game_server:
         condition: service_healthy
@@ -67,8 +67,8 @@ services:
       - ./:/app
 
   player_home_04:
-    image: golang:1.17
-    command: /app/my_bot_binary
+    image: golang:1.21
+    command: /app/.lugo/my_bot_binary
     depends_on:
       game_server:
         condition: service_healthy
@@ -82,8 +82,8 @@ services:
       - ./:/app
 
   player_home_05:
-    image: golang:1.17
-    command: /app/my_bot_binary
+    image: golang:1.21
+    command: /app/.lugo/my_bot_binary
     depends_on:
       game_server:
         condition: service_healthy
@@ -97,8 +97,8 @@ services:
       - ./:/app
 
   player_home_06:
-    image: golang:1.17
-    command: /app/my_bot_binary
+    image: golang:1.21
+    command: /app/.lugo/my_bot_binary
     depends_on:
       game_server:
         condition: service_healthy
@@ -112,8 +112,8 @@ services:
       - ./:/app
 
   player_home_07:
-    image: golang:1.17
-    command: /app/my_bot_binary
+    image: golang:1.21
+    command: /app/.lugo/my_bot_binary
     depends_on:
       game_server:
         condition: service_healthy
@@ -127,8 +127,8 @@ services:
       - ./:/app
 
   player_home_08:
-    image: golang:1.17
-    command: /app/my_bot_binary
+    image: golang:1.21
+    command: /app/.lugo/my_bot_binary
     depends_on:
       game_server:
         condition: service_healthy
@@ -142,8 +142,8 @@ services:
       - ./:/app
 
   player_home_09:
-    image: golang:1.17
-    command: /app/my_bot_binary
+    image: golang:1.21
+    command: /app/.lugo/my_bot_binary
     depends_on:
       game_server:
         condition: service_healthy
@@ -157,8 +157,8 @@ services:
       - ./:/app
 
   player_home_10:
-    image: golang:1.17
-    command: /app/my_bot_binary
+    image: golang:1.21
+    command: /app/.lugo/my_bot_binary
     depends_on:
       game_server:
         condition: service_healthy
@@ -172,8 +172,8 @@ services:
       - ./:/app
 
   player_home_11:
-    image: golang:1.17
-    command: /app/my_bot_binary
+    image: golang:1.21
+    command: /app/.lugo/my_bot_binary
     depends_on:
       game_server:
         condition: service_healthy
@@ -187,7 +187,7 @@ services:
       - ./:/app
 
   player_away_01:
-    image: ${AWAY_BOT:-lugobots/the-dummies-go:latest}
+    image: ${AWAY_BOT:-lugobots/level-1:v4-rc.1}
     network_mode: "host"
     depends_on:
       game_server:
@@ -195,8 +195,9 @@ services:
     environment:
       - BOT_NUMBER=1
       - BOT_TEAM=away
+      - MODE=${MODE:-default} # default zombies statues kids defenses
   player_away_02:
-    image: ${AWAY_BOT:-lugobots/the-dummies-go:latest}
+    image: ${AWAY_BOT:-lugobots/level-1:v4-rc.1}
     network_mode: "host"
     depends_on:
       game_server:
@@ -204,8 +205,9 @@ services:
     environment:
       - BOT_NUMBER=2
       - BOT_TEAM=away
+      - MODE=${MODE:-default} # default zombies statues kids defenses
   player_away_03:
-    image: ${AWAY_BOT:-lugobots/the-dummies-go:latest}
+    image: ${AWAY_BOT:-lugobots/level-1:v4-rc.1}
     network_mode: "host"
     depends_on:
       game_server:
@@ -213,8 +215,9 @@ services:
     environment:
       - BOT_NUMBER=3
       - BOT_TEAM=away
+      - MODE=${MODE:-default} # default zombies statues kids defenses
   player_away_04:
-    image: ${AWAY_BOT:-lugobots/the-dummies-go:latest}
+    image: ${AWAY_BOT:-lugobots/level-1:v4-rc.1}
     network_mode: "host"
     depends_on:
       game_server:
@@ -222,8 +225,9 @@ services:
     environment:
       - BOT_NUMBER=4
       - BOT_TEAM=away
+      - MODE=${MODE:-default} # default zombies statues kids defenses
   player_away_05:
-    image: ${AWAY_BOT:-lugobots/the-dummies-go:latest}
+    image: ${AWAY_BOT:-lugobots/level-1:v4-rc.1}
     network_mode: "host"
     depends_on:
       game_server:
@@ -231,8 +235,9 @@ services:
     environment:
       - BOT_NUMBER=5
       - BOT_TEAM=away
+      - MODE=${MODE:-default} # default zombies statues kids defenses
   player_away_06:
-    image: ${AWAY_BOT:-lugobots/the-dummies-go:latest}
+    image: ${AWAY_BOT:-lugobots/level-1:v4-rc.1}
     network_mode: "host"
     depends_on:
       game_server:
@@ -240,8 +245,9 @@ services:
     environment:
       - BOT_NUMBER=6
       - BOT_TEAM=away
+      - MODE=${MODE:-default} # default zombies statues kids defenses
   player_away_07:
-    image: ${AWAY_BOT:-lugobots/the-dummies-go:latest}
+    image: ${AWAY_BOT:-lugobots/level-1:v4-rc.1}
     network_mode: "host"
     depends_on:
       game_server:
@@ -249,8 +255,9 @@ services:
     environment:
       - BOT_NUMBER=7
       - BOT_TEAM=away
+      - MODE=${MODE:-default} # default zombies statues kids defenses
   player_away_08:
-    image: ${AWAY_BOT:-lugobots/the-dummies-go:latest}
+    image: ${AWAY_BOT:-lugobots/level-1:v4-rc.1}
     network_mode: "host"
     depends_on:
       game_server:
@@ -258,8 +265,9 @@ services:
     environment:
       - BOT_NUMBER=8
       - BOT_TEAM=away
+      - MODE=${MODE:-default} # default zombies statues kids defenses
   player_away_09:
-    image: ${AWAY_BOT:-lugobots/the-dummies-go:latest}
+    image: ${AWAY_BOT:-lugobots/level-1:v4-rc.1}
     network_mode: "host"
     depends_on:
       game_server:
@@ -267,8 +275,9 @@ services:
     environment:
       - BOT_NUMBER=9
       - BOT_TEAM=away
+      - MODE=${MODE:-default} # default zombies statues kids defenses
   player_away_10:
-    image: ${AWAY_BOT:-lugobots/the-dummies-go:latest}
+    image: ${AWAY_BOT:-lugobots/level-1:v4-rc.1}
     network_mode: "host"
     depends_on:
       game_server:
@@ -276,8 +285,9 @@ services:
     environment:
       - BOT_NUMBER=10
       - BOT_TEAM=away
+      - MODE=${MODE:-default} # default zombies statues kids defenses
   player_away_11:
-    image: ${AWAY_BOT:-lugobots/the-dummies-go:latest}
+    image: ${AWAY_BOT:-lugobots/level-1:v4-rc.1}
     network_mode: "host"
     depends_on:
       game_server:
@@ -285,3 +295,4 @@ services:
     environment:
       - BOT_NUMBER=11
       - BOT_TEAM=away
+      - MODE=${MODE:-default} # default zombies statues kids defenses

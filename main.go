@@ -3,34 +3,43 @@ package main
 import (
 	"log"
 
-	clientGo "github.com/lugobots/lugo4go/v2"
-	"github.com/lugobots/lugo4go/v2/pkg/util"
+	"github.com/lugobots/lugo4go/v3"
 
-	"github.com/lugobots/the-dummies-go/v2/bot"
+	"my-bot/bot"
 )
 
 func main() {
-	// DefaultInitBundle is a shortcut for stuff that usually we define in init functions
-	playerConfig, logger, err := util.DefaultInitBundle()
+	connectionStarter, defaultFieldMapper, err := lugo4go.NewDefaultStarter()
 	if err != nil {
-		log.Fatalf("could not init default config or logger: %s", err)
+		log.Fatalf("failed to load the bot configuration: %s", err)
 	}
 
-	dummy := bot.NewBot(logger, playerConfig.TeamSide, playerConfig.Number)
+	// OPTIONAL
+	// define your own field mapper! The default number of col/rows are defined by lugo4go.DefaultFieldMapCols and lugo4go.DefaultFieldMapRows
+	//defaultFieldMapper, err = field.NewMapper(NUM_COLS, NUM_ROWS, connectionStarter.Config.TeamSide)
+	//if err != nil {
+	//	log.Fatalf("failed to create a field mapper: %s", err)
+	//}
 
-	playerConfig.InitialPosition = dummy.MyInitialPosition()
+	// create your bot as you wish
+	// in this example, the bot requires the field mapper, the connection config, and a logger.
+	myBot := bot.NewBot(
+		defaultFieldMapper,
+		connectionStarter.Config,
+		connectionStarter.Logger,
+	)
 
-	log.Printf("%s-%d: %v", playerConfig.TeamSide, playerConfig.Number, dummy.MyInitialPosition())
-
-	player, err := clientGo.NewClient(playerConfig)
+	// Here you define the initial position of your bot. It's important to use the field mapper instead of points because
+	// the field mapper won't be affected when your bot is playing on the away side
+	initialPosition := bot.DefaultInitialPositions[connectionStarter.Config.Number]
+	region, err := defaultFieldMapper.GetRegion(initialPosition.Col, initialPosition.Row)
 	if err != nil {
-		log.Fatalf("could not init the gRPC client (server at %s): %s", playerConfig.GRPCAddress, err)
+		log.Fatalf("failed to define initial position using field mapper: %s", err)
 	}
-	logger.Info("connected to the game server")
+	connectionStarter.Config.InitialPosition = region.Center()
 
-	if err := player.PlayAsBot(dummy, logger.Named("bot")); err != nil {
-		logger.With("error", err).Warnf("got interruption signal")
+	// then lets play
+	if err := connectionStarter.Run(myBot); err != nil {
+		log.Fatalf("bot stopped: %s", err)
 	}
-
-	logger.Infof("process finished")
 }
