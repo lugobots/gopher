@@ -20,6 +20,12 @@ services:
     working_dir: /builder
     volumes:
       - ${PROJECT_PATH:-./}:/builder
+    healthcheck:
+      test: bash -c "[ -f /builder/.lugo/my_bot_binary ]"
+      interval: 1s
+      timeout: 2s
+      retries: 3
+      start_period: 30s
     command:
       - /bin/bash
       - -c
@@ -28,16 +34,16 @@ services:
         export GOMODCACHE=/builder/.lugo/go-mod-cache
         rm -f /builder/.lugo/my_bot_binary || echo "Binary not found"
         time go build -o /builder/.lugo/my_bot_binary main.go
-        nodemon -L --ext go --watch "./*" --exec "go build -o /builder/.lugo/my_bot_binary main.go"
+        nodemon -L --ext go --watch "./*" --exec "echo 're-compiling' && go build -o /builder/.lugo/my_bot_binary main.go"
 
   player_home_01:
     image: go_bot_watcher
-    command: ["nodemon", "-L", "--watch", "/app/.lugo/my_bot_binary", "/app/.lugo/my_bot_binary"]
+    command: ["nodemon", "--verbose", "-L", "--watch", "/app/.lugo/my_bot_binary", "--exec", "/app/.lugo/super.sh"]
     depends_on:
       game_server:
         condition: service_healthy
       watcher:
-        condition: service_completed_successfully
+        condition: service_healthy
     environment:
       - BOT_NUMBER=1
       - BOT_TEAM=home
@@ -47,12 +53,12 @@ services:
 
   player_home_02:
     image: go_bot_watcher
-    command: ["nodemon", "-L", "--watch", "/app/.lugo/my_bot_binary", "/app/.lugo/my_bot_binary"]
+    command: ["nodemon", "-L", "--watch", "/app/.lugo/my_bot_binary", "--exec", "/app/.lugo/my_bot_binary"]
     depends_on:
       game_server:
         condition: service_healthy
       watcher:
-        condition: service_completed_successfully
+        condition: service_healthy
     environment:
       - BOT_NUMBER=2
       - BOT_TEAM=home
@@ -62,12 +68,12 @@ services:
 
   player_home_03:
     image: go_bot_watcher
-    command: ["nodemon", "-L", "--watch", "/app/.lugo/my_bot_binary", "/app/.lugo/my_bot_binary"]
+    command: ["nodemon", "-L", "--watch", "/app/.lugo/my_bot_binary", "--exec", "/app/.lugo/my_bot_binary"]
     depends_on:
       game_server:
         condition: service_healthy
       watcher:
-        condition: service_completed_successfully
+        condition: service_healthy
     environment:
       - BOT_NUMBER=3
       - BOT_TEAM=home
@@ -77,12 +83,12 @@ services:
 
   player_home_04:
     image: go_bot_watcher
-    command: ["nodemon", "-L", "--watch", "/app/.lugo/my_bot_binary", "/app/.lugo/my_bot_binary"]
+    command: ["nodemon", "-L", "--watch", "/app/.lugo/my_bot_binary", "--exec", "/app/.lugo/my_bot_binary"]
     depends_on:
       game_server:
         condition: service_healthy
       watcher:
-        condition: service_completed_successfully
+        condition: service_healthy
     environment:
       - BOT_NUMBER=4
       - BOT_TEAM=home
@@ -92,12 +98,12 @@ services:
 
   player_home_05:
     image: go_bot_watcher
-    command: ["nodemon", "-L", "--watch", "/app/.lugo/my_bot_binary", "/app/.lugo/my_bot_binary"]
+    command: ["nodemon", "-L", "--watch", "/app/.lugo/my_bot_binary", "--exec", "/app/.lugo/my_bot_binary"]
     depends_on:
       game_server:
         condition: service_healthy
       watcher:
-        condition: service_completed_successfully
+        condition: service_healthy
     environment:
       - BOT_NUMBER=5
       - BOT_TEAM=home
@@ -107,12 +113,12 @@ services:
 
   player_home_06:
     image: go_bot_watcher
-    command: ["nodemon", "-L", "--watch", "/app/.lugo/my_bot_binary", "/app/.lugo/my_bot_binary"]
+    command: ["nodemon", "-L", "--watch", "/app/.lugo/my_bot_binary", "--exec", "/app/.lugo/my_bot_binary"]
     depends_on:
       game_server:
         condition: service_healthy
       watcher:
-        condition: service_completed_successfully
+        condition: service_healthy
     environment:
       - BOT_NUMBER=6
       - BOT_TEAM=home
@@ -122,12 +128,12 @@ services:
 
   player_home_07:
     image: go_bot_watcher
-    command: ["nodemon", "-L", "--watch", "/app/.lugo/my_bot_binary", "/app/.lugo/my_bot_binary"]
+    command: ["nodemon", "-L", "--watch", "/app/.lugo/my_bot_binary", "--exec", "/app/.lugo/my_bot_binary"]
     depends_on:
       game_server:
         condition: service_healthy
       watcher:
-        condition: service_completed_successfully
+        condition: service_healthy
     environment:
       - BOT_NUMBER=7
       - BOT_TEAM=home
@@ -137,12 +143,12 @@ services:
 
   player_home_08:
     image: go_bot_watcher
-    command: ["nodemon", "-L", "--watch", "/app/.lugo/my_bot_binary", "/app/.lugo/my_bot_binary"]
+    command: ["nodemon", "-L", "--watch", "/app/.lugo/my_bot_binary", "--exec", "/app/.lugo/my_bot_binary"]
     depends_on:
       game_server:
         condition: service_healthy
       watcher:
-        condition: service_completed_successfully
+        condition: service_healthy
     environment:
       - BOT_NUMBER=8
       - BOT_TEAM=home
@@ -152,12 +158,12 @@ services:
 
   player_home_09:
     image: go_bot_watcher
-    command: ["nodemon", "-L", "--watch", "/app/.lugo/my_bot_binary", "/app/.lugo/my_bot_binary"]
+    command: ["nodemon", "-L", "--watch", "/app/.lugo/my_bot_binary", "--exec", "/app/.lugo/my_bot_binary"]
     depends_on:
       game_server:
         condition: service_healthy
       watcher:
-        condition: service_completed_successfully
+        condition: service_healthy
     environment:
       - BOT_NUMBER=9
       - BOT_TEAM=home
@@ -167,12 +173,12 @@ services:
 
   player_home_10:
     image: go_bot_watcher
-    command: ["nodemon", "-L", "--watch", "/app/.lugo/my_bot_binary", "/app/.lugo/my_bot_binary"]
+    command: ["/app/.lugo/my_bot_binary"]
     depends_on:
       game_server:
         condition: service_healthy
       watcher:
-        condition: service_completed_successfully
+        condition: service_healthy
     environment:
       - BOT_NUMBER=10
       - BOT_TEAM=home
@@ -182,12 +188,12 @@ services:
 
   player_home_11:
     image: go_bot_watcher
-    command: ["nodemon", "-L", "--watch", "/app/.lugo/my_bot_binary", "/app/.lugo/my_bot_binary"]
+    command: ["nodemon",  "-L", "--watch", "/app/.lugo/my_bot_binary", "--exec", "/app/.lugo/super.sh"]
     depends_on:
       game_server:
         condition: service_healthy
       watcher:
-        condition: service_completed_successfully
+        condition: service_healthy
     environment:
       - BOT_NUMBER=11
       - BOT_TEAM=home

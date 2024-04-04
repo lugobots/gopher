@@ -1,0 +1,5 @@
+{
+  "spawn": false,
+  "watch": ["/app/.lugo/my_bot_binary"],
+  "exec": "/app/.lugo/super.sh"
+}
