@@ -1,9 +1,12 @@
 package main
 
 import (
-	"log"
-
+	"fmt"
 	"github.com/lugobots/lugo4go/v3"
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"my-bot/bot"
 )
@@ -34,9 +37,34 @@ func main() {
 	initialPosition := bot.DefaultInitialPositions[connectionStarter.Config.Number]
 	region, err := defaultFieldMapper.GetRegion(initialPosition.Col, initialPosition.Row)
 	if err != nil {
-		log.Fatalf("failed to define initial position using field mapper: %s", err)
+		log.Fatalf("failed to define initsssialdddddd position using field mapper: %s", err)
 	}
 	connectionStarter.Config.InitialPosition = region.Center()
+
+	sigs := make(chan os.Signal, 1)
+
+	signal.Notify(sigs,
+		syscall.SIGHUP,
+		syscall.SIGINT,
+		syscall.SIGQUIT,
+		syscall.SIGILL,
+		syscall.SIGTRAP,
+		syscall.SIGABRT,
+		syscall.SIGBUS,
+		syscall.SIGFPE,
+		syscall.SIGKILL,
+		syscall.SIGSEGV,
+		syscall.SIGPIPE,
+		syscall.SIGALRM,
+		syscall.SIGTERM,
+	)
+
+	go func() {
+		fmt.Println("VAMOssS XXX")
+		sig := <-sigs
+		fmt.Println("FUNFA")
+		fmt.Println(sig)
+	}()
 
 	// then lets play
 	if err := connectionStarter.Run(myBot); err != nil {
