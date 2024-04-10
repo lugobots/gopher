@@ -3,3 +3,5 @@ the-dummies
 /.idea/
 my_bot_binary
 /.studio
+.lugo/go-cache
+.lugo/go-mod-cache
